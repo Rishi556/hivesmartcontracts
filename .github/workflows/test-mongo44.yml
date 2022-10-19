@@ -1,0 +1,47 @@
+name: Run Tests Mongo 4.4
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+jobs:
+  build:
+    runs-on: '${{ matrix.os }}'
+    strategy:
+      matrix:
+        os:
+          - ubuntu-20.04
+        node-version:
+          - 16.x
+          - 18.x
+    steps:
+      - name: 'Set up Node.js ${{ matrix.node-version }}'
+        uses: actions/setup-node@v1
+        with:
+          node-version: '${{ matrix.node-version }}'
+      - uses: actions/checkout@v2
+      - run: >-
+          wget
+          http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu1604-4.4.5.tgz
+      - run: tar xzf mongodb-linux-x86_64-ubuntu1604-4.4.5.tgz
+      - run: '${PWD}/mongodb-linux-x86_64-ubuntu1604-4.4.5/bin/mongod --version'
+      - run: 'echo "replication:" | sudo tee -a /etc/mongod.conf'
+      - run: 'echo "  replSetName: \"rs0\"" | sudo tee -a /etc/mongod.conf'
+      - run: 'mkdir ${PWD}/mongodb-linux-x86_64-ubuntu1604-4.4.5/data'
+      - run: >-
+          ${PWD}/mongodb-linux-x86_64-ubuntu1604-4.4.5/bin/mongod --dbpath
+          ${PWD}/mongodb-linux-x86_64-ubuntu1604-4.4.5/data --config
+          /etc/mongod.conf --logpath
+          ${PWD}/mongodb-linux-x86_64-ubuntu1604-4.4.5/mongodb.log --fork
+      - run: sleep 20
+      - run: >-
+          ${PWD}/mongodb-linux-x86_64-ubuntu1604-4.4.5/bin/mongo --eval
+          'rs.initiate()'
+      - run: sleep 15
+      - run: npm ci
+#      - run: npm run lint
+      - run: npm run test
+      - run: pkill mongod
+
