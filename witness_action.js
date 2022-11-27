@@ -67,7 +67,7 @@ function awaitValidation(trxID, tries = 1) {
 }
 
 function broadcastWitnessAction(contractAction, contractPayload) {
-  const client = new dhive.Client(streamNodes[0]);
+  const client = new dhive.Client(streamNodes[0], { chainId: '4200000000000000000000000000000000000000000000000000000000000000' });
   const transaction = {
     required_auths: [witnessAccount],
     required_posting_auths: [],
