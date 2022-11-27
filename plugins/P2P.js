@@ -56,7 +56,7 @@ const hiveClient = {
     };
 
     if (this.client === null) {
-      this.client = new dhive.Client(this.getHiveNode());
+      this.client = new dhive.Client(this.getHiveNode(), { chainId: '4200000000000000000000000000000000000000000000000000000000000000' });
     }
 
     try {
