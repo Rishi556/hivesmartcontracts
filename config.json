@@ -1,5 +1,5 @@
 {
-    "chainId": "mainnet-hive",
+    "chainId": "testnet-hive",
     "rpcNodePort": 5000,
     "p2pPort": 5001,
     "databaseURL": "mongodb://127.0.0.1:27017",
@@ -7,18 +7,15 @@
     "blocksLogFilePath": "./blocks.log",
     "javascriptVMTimeout": 10000,
     "streamNodes": [
-        "https://api.deathwing.me",
-        "https://rpc.ecency.com",
-        "https://hived.emre.sh",
-        "https://api.openhive.network"
+        "https://mirrornet.rishipanthee.com"
     ],
-    "startHiveBlock": 41967000,
+    "startHiveBlock": 0,
     "genesisHiveBlock": 41967000,
     "witnessEnabled": true,
     "defaultLogLevel": "warn",
-    "lightNode": false,
+    "lightNode": true,
     "blocksToKeep": 864000,
-    "domain" : "",
+    "domain" : "thisisatestnetnode.com",
     "rpcConfig" : {
         "maxLimit" : 1000,
         "maxOffset" : -1,
