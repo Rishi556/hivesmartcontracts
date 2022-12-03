@@ -9,8 +9,8 @@
     "streamNodes": [
         "https://mirrornet.rishipanthee.com"
     ],
-    "startHiveBlock": 69499464,
-    "genesisHiveBlock": 69499464,
+    "startHiveBlock": 69627003,
+    "genesisHiveBlock": 69627003,
     "witnessEnabled": true,
     "defaultLogLevel": "warn",
     "lightNode": true,
