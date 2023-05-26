@@ -1,22 +1,19 @@
 {
-    "chainId": "mainnet-hive",
-    "rpcNodePort": 5000,
-    "p2pPort": 5001,
+    "chainId": "testnet-witness",
+    "rpcNodePort": 16000,
+    "p2pPort": 16001,
     "databaseURL": "mongodb://127.0.0.1:27017",
-    "databaseName": "hsc",
+    "databaseName": "hsc_witness_testnet",
     "blocksLogFilePath": "./blocks.log",
     "javascriptVMTimeout": 10000,
     "streamNodes": [
-        "https://api.deathwing.me",
-        "https://rpc.ecency.com",
-        "https://hived.emre.sh",
-        "https://api.openhive.network"
+        "https://api.deathwing.me"
     ],
-    "startHiveBlock": 41967000,
-    "genesisHiveBlock": 41967000,
+    "startHiveBlock": 75216969,
+    "genesisHiveBlock": 75216969,
     "witnessEnabled": true,
     "defaultLogLevel": "warn",
-    "domain" : "",
+    "domain" : "THIS IS A TESTNET NODE!!!",
     "lightNode": {
         "enabled": false,
         "blocksToKeep": 864000,
@@ -28,12 +25,12 @@
         "maxBatchLength" : 1,
         "logRequests" : false,
         "disabledMethods" : {
-            "blockchain" : ["getBlockRangeInfo"],
+            "blockchain" : [],
             "contracts" : []
         }
     },
     "rpcWebsockets" : {
         "enabled" : true,
-        "port" : 5002
+        "port" : 16002
     }
 }
