@@ -1,5 +1,4 @@
 require('dotenv').config();
-const axios = require('axios');
 const dhive = require('@hiveio/dhive');
 const program = require('commander');
 const { exec } = require('child_process');
@@ -30,11 +29,18 @@ const { verify, skipDiverganceCheck } = program;
 engineNode = engineNode.replace(/\/$/, '');
 
 function awaitValidation(trxID, tries = 1) {
-  axios.post(`${engineNode}/blockchain`, {
-    jsonrpc: '2.0', id: 0, method: 'getTransactionInfo', params: { txid: trxID },
-  }).then((res) => {
-    if (res.data.result) {
-      const parsedLogs = JSON.parse(res.data.result.logs);
+  fetch(`${engineNode}/blockchain`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0', id: 0, method: 'getTransactionInfo', params: { txid: trxID } 
+    }),
+  }).then(async (res) => {
+    if (res.ok) {
+      const result = await res.json();
+      const parsedLogs = JSON.parse(result.result.logs);
       if (parsedLogs.errors) {
         // eslint-disable-next-line no-console
         console.log(`Failed action with reason "${parsedLogs.errors[0]}", your trx id: ${trxID}`);
