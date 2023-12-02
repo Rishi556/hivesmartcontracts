@@ -1,11 +1,11 @@
 const SHA256 = require('crypto-js/sha256');
 const enchex = require('crypto-js/enc-hex');
 const log = require('loglevel');
-const { CONSTANTS } = require('../libs/Constants');
+const { CONSTANTS } = require('./Constants');
 
 const { SmartContracts } = require('./SmartContracts');
-const { Transaction } = require('../libs/Transaction');
-const { setupContractPayload } = require('../libs/util/contractUtil');
+const { Transaction } = require('./Transaction');
+const { setupContractPayload } = require('./util/contractUtil');
 
 const revertCommentsContractPayload = setupContractPayload('comments', './contracts/revert/comments_minify_20211027.js');
 
@@ -132,7 +132,7 @@ class Block {
     }
 
     // remove comment, comment_options and votes if not relevant
-    this.transactions = this.transactions.filter(value => (value.contract !== 'comments' || allowCommentContract) || value.logs === '{}');
+    this.transactions = this.transactions.filter((value) => (value.contract !== 'comments' || allowCommentContract) || value.logs === '{}');
 
     // handle virtual transactions
     const virtualTransactions = [];
@@ -174,7 +174,6 @@ class Block {
             tickingAction = true;
           }
         }
-
 
         if (transaction.contract === 'inflation'
           && transaction.action === 'issueNewTokens'
@@ -233,8 +232,13 @@ class Block {
 
         if (authorizedAccountContractDeployment.includes(sender)) {
           results = await SmartContracts.deploySmartContract( // eslint-disable-line
-            database, transaction, this.blockNumber, this.timestamp,
-            this.refHiveBlockId, this.prevRefHiveBlockId, jsVMTimeout,
+            database,
+            transaction,
+            this.blockNumber,
+            this.timestamp,
+            this.refHiveBlockId,
+            this.prevRefHiveBlockId,
+            jsVMTimeout,
           );
         } else {
           results = { logs: { errors: ['the contract deployment is currently unavailable'] } };
@@ -249,14 +253,19 @@ class Block {
         }
       } else {
         results = await SmartContracts.executeSmartContract(// eslint-disable-line
-          database, transaction, this.blockNumber, this.timestamp,
-          this.refHiveBlockId, this.prevRefHiveBlockId, jsVMTimeout,
+          database,
+          transaction,
+          this.blockNumber,
+          this.timestamp,
+          this.refHiveBlockId,
+          this.prevRefHiveBlockId,
+          jsVMTimeout,
         );
       }
     } else {
       results = { logs: { errors: ['the parameters sender, contract and action are required'] } };
     }
-    if (results.logs && results.logs.errors && results.logs.errors.find(m => m.includes('MongoError'))) {
+    if (results.logs && results.logs.errors && results.logs.errors.find((m) => m.includes('MongoError'))) {
       throw new Error(`Mongo tx error, transaction: ${JSON.stringify(transaction)}, result: ${JSON.stringify(results)}`);
     }
 
@@ -265,7 +274,6 @@ class Block {
 
     // get the database hash
     newCurrentDatabaseHash = database.getDatabaseHash();
-
 
     log.info('Tx results: ', results);
     transaction.addLogs(results.logs);

@@ -78,7 +78,7 @@ actions.updateParams = async (payload) => {
   }
 };
 
-const countDecimals = value => api.BigNumber(value).dp();
+const countDecimals = (value) => api.BigNumber(value).dp();
 
 const getTimestamp = (value) => {
   try {
@@ -91,7 +91,7 @@ const getTimestamp = (value) => {
 
 const transferIsSuccessful = (result, action, from, to, symbol, quantity) => {
   if (result.errors === undefined
-    && result.events && result.events.find(el => el.contract === 'tokens'
+    && result.events && result.events.find((el) => el.contract === 'tokens'
     && el.event === action
     && el.data.from === from
     && el.data.to === to
@@ -425,7 +425,7 @@ actions.settle = async (payload) => {
 
         if (account) {
           // search if there is a bid from this account
-          id = auction.bids.findIndex(el => el.account === account);
+          id = auction.bids.findIndex((el) => el.account === account);
           if (!api.assert(auction.bids[id], 'no bid from account found in the auction')) return;
         }
 
@@ -489,7 +489,7 @@ actions.bid = async (payload) => {
         && api.assert(api.isValidAccountName(marketAccount), 'invalid marketAccount')) {
         let nbTokensToLock = api.BigNumber(bid).gt(finalPrice) ? finalPrice : bid;
         // find if the account has any previous bid in this auction
-        const previousBidIndex = auction.bids.findIndex(el => el.account === api.sender);
+        const previousBidIndex = auction.bids.findIndex((el) => el.account === api.sender);
         const previousBid = auction.bids[previousBidIndex];
 
         const newBid = {
@@ -522,7 +522,7 @@ actions.bid = async (payload) => {
 
           // make sure the transfer was succesfull and update auction
           if (transferIsSuccessful(tokenTransfer, 'transferToContract', api.sender, CONTRACT_NAME, priceSymbol, nbTokensToLock)) {
-            const newBidIndex = auction.bids.findIndex(el => el.account === api.sender);
+            const newBidIndex = auction.bids.findIndex((el) => el.account === api.sender);
 
             // if the bid hits the finalPrice, settle the auction
             if (api.BigNumber(newBid.bid).gte(finalPrice)) {
@@ -603,7 +603,7 @@ actions.cancelBid = async (payload) => {
       } = auction;
 
       // find if the account has any bid in this auction
-      const bidIndex = auction.bids.findIndex(el => el.account === api.sender);
+      const bidIndex = auction.bids.findIndex((el) => el.account === api.sender);
       const bid = auction.bids[bidIndex];
 
       const blockDate = new Date(`${api.hiveBlockTimestamp}.000Z`);
@@ -664,7 +664,8 @@ actions.updateAuctions = async () => {
 
   const lastValidLead = timestamp - params.expiryTimeMillis;
 
-  const auctionsToSettle = await api.db.find('auctions',
+  const auctionsToSettle = await api.db.find(
+    'auctions',
     {
       $or: [
         { lastLeadUpdate: { $lte: lastValidLead } },
@@ -673,7 +674,8 @@ actions.updateAuctions = async () => {
     },
     params.auctionsPerBlock,
     0,
-    [{ index: '_id', descending: false }]);
+    [{ index: '_id', descending: false }],
+  );
 
   for (let i = 0; i < auctionsToSettle.length; i += 1) {
     const auction = auctionsToSettle[i];

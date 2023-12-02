@@ -9,7 +9,7 @@ const BigNumber = require('bignumber.js');
 const log = require('loglevel');
 const validator = require('validator');
 const seedrandom = require('seedrandom');
-const { CONSTANTS } = require('../libs/Constants');
+const { CONSTANTS } = require('./Constants');
 
 const RESERVED_CONTRACT_NAMES = ['contract', 'blockProduction', 'null'];
 const RESERVED_ACTIONS = ['createSSC'];
@@ -19,9 +19,7 @@ const MAXJSVMs = 5;
 
 class SmartContracts {
   // deploy the smart contract to the blockchain and initialize the database if needed
-  static async deploySmartContract(
-    database, transaction, blockNumber, timestamp, refHiveBlockId, prevRefHiveBlockId, jsVMTimeout,
-  ) {
+  static async deploySmartContract(database, transaction, blockNumber, timestamp, refHiveBlockId, prevRefHiveBlockId, jsVMTimeout) {
     try {
       const { transactionId, refHiveBlockNumber, sender } = transaction;
       const payload = JSON.parse(transaction.payload);
@@ -97,29 +95,19 @@ class SmartContracts {
         // prepare the db object that will be available in the VM
         const db = {
           // create a new table for the smart contract
-          createTable: (tableName, indexes = [], tableParams = {}) => SmartContracts.createTable(
-            database, tables, name, tableName, indexes, tableParams,
-          ),
+          createTable: (tableName, indexes = [], tableParams = {}) => SmartContracts.createTable(database, tables, name, tableName, indexes, tableParams),
           // add indexes for an existing table
-          addIndexes: (tableName, indexes) => SmartContracts.addIndexes(
-            database, tables, name, tableName, indexes,
-          ),
+          addIndexes: (tableName, indexes) => SmartContracts.addIndexes(database, tables, name, tableName, indexes),
           // perform a query find on a table of the smart contract
-          find: (table, query, limit = 1000, offset = 0, indexes = []) => SmartContracts.find(
-            database, name, table, query, limit, offset, indexes,
-          ),
+          find: (table, query, limit = 1000, offset = 0, indexes = []) => SmartContracts.find(database, name, table, query, limit, offset, indexes),
           // perform a query find on a table of an other smart contract
-          findInTable: (contractName, table, query, limit = 1000, offset = 0, index = '', descending = false) => SmartContracts.find(
-            database, contractName, table, query, limit, offset, index, descending,
-          ),
+          findInTable: (contractName, table, query, limit = 1000, offset = 0, index = '', descending = false) => SmartContracts.find(database, contractName, table, query, limit, offset, index, descending),
           // perform a query findOne on a table of the smart contract
           findOne: (table, query) => SmartContracts.findOne(database, name, table, query),
           // perform a query findOne on a table of an other smart contract
-          findOneInTable: (contractName, table, query) => SmartContracts.findOne(
-            database, contractName, table, query,
-          ),
+          findOneInTable: (contractName, table, query) => SmartContracts.findOne(database, contractName, table, query),
           // find the information of a contract
-          findContract: contractName => SmartContracts.findContract(database, contractName),
+          findContract: (contractName) => SmartContracts.findContract(database, contractName),
           // insert a record in the table of the smart contract
           insert: (table, record) => SmartContracts.dinsert(database, name, table, record),
           // insert a record in the table of the smart contract
@@ -127,7 +115,7 @@ class SmartContracts {
           // insert a record in the table of the smart contract
           update: (table, record, unsets = undefined) => SmartContracts.update(database, name, table, record, unsets),
           // check if a table exists
-          tableExists: table => SmartContracts.tableExists(database, name, table),
+          tableExists: (table) => SmartContracts.tableExists(database, name, table),
         };
 
         // logs used to store events or errors
@@ -187,16 +175,25 @@ class SmartContracts {
               }
             },
             random: () => rng(),
-            debug: logmsg => log.info(logmsg), // eslint-disable-line no-console
+            debug: (logmsg) => log.info(logmsg), // eslint-disable-line no-console
             // execute a smart contract from the current smart contract
-            executeSmartContract: async (
-              contractName, actionName, parameters,
-            ) => SmartContracts.executeSmartContractFromSmartContract(
-              database, logs, finalSender, params, contractName, actionName,
+            executeSmartContract: async (contractName, actionName, parameters) => SmartContracts.executeSmartContractFromSmartContract(
+              database,
+              logs,
+              finalSender,
+              params,
+              contractName,
+              actionName,
               JSON.stringify(parameters),
-              blockNumber, timestamp,
-              refHiveBlockNumber, refHiveBlockId, prevRefHiveBlockId, jsVMTimeout,
-              name, 'createSSC', contractVersion,
+              blockNumber,
+              timestamp,
+              refHiveBlockNumber,
+              refHiveBlockId,
+              prevRefHiveBlockId,
+              jsVMTimeout,
+              name,
+              'createSSC',
+              contractVersion,
             ),
             // emit an event that will be stored in the logs
             emit: (event, data) => typeof event === 'string' && logs.events.push({ contract: name, event, data }),
@@ -207,7 +204,7 @@ class SmartContracts {
               }
               return condition;
             },
-            isValidAccountName: account => SmartContracts.isValidAccountName(account, refHiveBlockNumber),
+            isValidAccountName: (account) => SmartContracts.isValidAccountName(account, refHiveBlockNumber),
           },
         };
 
@@ -262,7 +259,7 @@ class SmartContracts {
       }
       const contractsConfig = await database.getContractsConfig();
       const { contractTicks } = contractsConfig;
-      if (contractTicks.find(t => t.contract === contractName && t.action === tickAction)) {
+      if (contractTicks.find((t) => t.contract === contractName && t.action === tickAction)) {
         return { logs: { errors: ['contract tick already registered'] } };
       }
       const newContractTick = {
@@ -290,9 +287,7 @@ class SmartContracts {
   }
 
   // execute the smart contract and perform actions on the database if needed
-  static async executeSmartContract(
-    database, transaction, blockNumber, timestamp, refHiveBlockId, prevRefHiveBlockId, jsVMTimeout,
-  ) {
+  static async executeSmartContract(database, transaction, blockNumber, timestamp, refHiveBlockId, prevRefHiveBlockId, jsVMTimeout) {
     try {
       const {
         transactionId,
@@ -322,25 +317,17 @@ class SmartContracts {
       // prepare the db object that will be available in the VM
       const db = {
         // create a new table for the smart contract
-        createTable: (tableName, indexes = [], params = {}) => SmartContracts.createTable(
-          database, tables, contract, tableName, indexes, params,
-        ),
+        createTable: (tableName, indexes = [], params = {}) => SmartContracts.createTable(database, tables, contract, tableName, indexes, params),
         // perform a query find on a table of the smart contract
-        find: (table, query, limit = 1000, offset = 0, indexes = []) => SmartContracts.find(
-          database, contract, table, query, limit, offset, indexes,
-        ),
+        find: (table, query, limit = 1000, offset = 0, indexes = []) => SmartContracts.find(database, contract, table, query, limit, offset, indexes),
         // perform a query find on a table of an other smart contract
-        findInTable: (contractName, table, query, limit = 1000, offset = 0, index = '', descending = false) => SmartContracts.find(
-          database, contractName, table, query, limit, offset, index, descending,
-        ),
+        findInTable: (contractName, table, query, limit = 1000, offset = 0, index = '', descending = false) => SmartContracts.find(database, contractName, table, query, limit, offset, index, descending),
         // perform a query findOne on a table of the smart contract
         findOne: (table, query) => SmartContracts.findOne(database, contract, table, query),
         // perform a query findOne on a table of an other smart contract
-        findOneInTable: (contractName, table, query) => SmartContracts.findOne(
-          database, contractName, table, query,
-        ),
+        findOneInTable: (contractName, table, query) => SmartContracts.findOne(database, contractName, table, query),
         // find the information of a contract
-        findContract: contractName => SmartContracts.findContract(database, contractName),
+        findContract: (contractName) => SmartContracts.findContract(database, contractName),
         // insert a record in the table of the smart contract
         insert: (table, record) => SmartContracts.insert(database, contract, table, record),
         // insert a record in the table of the smart contract
@@ -348,9 +335,9 @@ class SmartContracts {
         // insert a record in the table of the smart contract
         update: (table, record, unsets = undefined) => SmartContracts.update(database, contract, table, record, unsets),
         // check if a table exists
-        tableExists: table => SmartContracts.tableExists(database, contract, table),
+        tableExists: (table) => SmartContracts.tableExists(database, contract, table),
         // get block information
-        getBlockInfo: blockNum => SmartContracts.getBlockInfo(database, blockNum),
+        getBlockInfo: (blockNum) => SmartContracts.getBlockInfo(database, blockNum),
       };
 
       // logs used to store events or errors
@@ -415,33 +402,54 @@ class SmartContracts {
               return false;
             }
           },
-          debug: logmsg => log.info(logmsg), // eslint-disable-line no-console
+          debug: (logmsg) => log.info(logmsg), // eslint-disable-line no-console
           // execute a smart contract from the current smart contract
-          executeSmartContract: async (
-            contractName, actionName, parameters,
-          ) => SmartContracts.executeSmartContractFromSmartContract(
-            database, results, sender, payloadObj, contractName, actionName,
+          executeSmartContract: async (contractName, actionName, parameters) => SmartContracts.executeSmartContractFromSmartContract(
+            database,
+            results,
+            sender,
+            payloadObj,
+            contractName,
+            actionName,
             JSON.stringify(parameters),
-            blockNumber, timestamp,
-            refHiveBlockNumber, refHiveBlockId, prevRefHiveBlockId, jsVMTimeout,
-            contract, action, contractVersion,
+            blockNumber,
+            timestamp,
+            refHiveBlockNumber,
+            refHiveBlockId,
+            prevRefHiveBlockId,
+            jsVMTimeout,
+            contract,
+            action,
+            contractVersion,
           ),
           // execute a smart contract from the current smart contract
           // with the contractOwner authority level
-          executeSmartContractAsOwner: async (
-            contractName, actionName, parameters,
-          ) => SmartContracts.executeSmartContractFromSmartContract(
-            database, results, contractOwner, payloadObj, contractName, actionName,
+          executeSmartContractAsOwner: async (contractName, actionName, parameters) => SmartContracts.executeSmartContractFromSmartContract(
+            database,
+            results,
+            contractOwner,
+            payloadObj,
+            contractName,
+            actionName,
             JSON.stringify(parameters),
-            blockNumber, timestamp,
-            refHiveBlockNumber, refHiveBlockId, prevRefHiveBlockId, jsVMTimeout,
-            contract, action, contractVersion,
+            blockNumber,
+            timestamp,
+            refHiveBlockNumber,
+            refHiveBlockId,
+            prevRefHiveBlockId,
+            jsVMTimeout,
+            contract,
+            action,
+            contractVersion,
           ),
           // execute a token transfer from the contract balance
-          transferTokens: async (
-            to, symbol, quantity, type,
-          ) => SmartContracts.executeSmartContractFromSmartContract(
-            database, results, 'null', payloadObj, 'tokens', 'transferFromContract',
+          transferTokens: async (to, symbol, quantity, type) => SmartContracts.executeSmartContractFromSmartContract(
+            database,
+            results,
+            'null',
+            payloadObj,
+            'tokens',
+            'transferFromContract',
             JSON.stringify({
               from: contract,
               to,
@@ -449,9 +457,15 @@ class SmartContracts {
               symbol,
               type,
             }),
-            blockNumber, timestamp,
-            refHiveBlockNumber, refHiveBlockId, prevRefHiveBlockId, jsVMTimeout,
-            contract, action, contractVersion,
+            blockNumber,
+            timestamp,
+            refHiveBlockNumber,
+            refHiveBlockId,
+            prevRefHiveBlockId,
+            jsVMTimeout,
+            contract,
+            action,
+            contractVersion,
           ),
           verifyBlock: async (block) => {
             if (contract !== 'witnesses') return;
@@ -466,17 +480,20 @@ class SmartContracts {
             }
             return condition;
           },
-          isValidAccountName: account => SmartContracts.isValidAccountName(account, refHiveBlockNumber),
+          isValidAccountName: (account) => SmartContracts.isValidAccountName(account, refHiveBlockNumber),
         },
       };
 
       // if action is called from another contract, we can add an additional function
       // to allow token transfers from the calling contract
       if ('callingContractInfo' in payloadObj) {
-        vmState.api.transferTokensFromCallingContract = async (
-          to, symbol, quantity, type,
-        ) => SmartContracts.executeSmartContractFromSmartContract(
-          database, results, 'null', payloadObj, 'tokens', 'transferFromContract',
+        vmState.api.transferTokensFromCallingContract = async (to, symbol, quantity, type) => SmartContracts.executeSmartContractFromSmartContract(
+          database,
+          results,
+          'null',
+          payloadObj,
+          'tokens',
+          'transferFromContract',
           JSON.stringify({
             from: payloadObj.callingContractInfo.name,
             to,
@@ -484,9 +501,14 @@ class SmartContracts {
             symbol,
             type,
           }),
-          blockNumber, timestamp,
-          refHiveBlockNumber, refHiveBlockId, prevRefHiveBlockId, jsVMTimeout,
-          contract, contractVersion,
+          blockNumber,
+          timestamp,
+          refHiveBlockNumber,
+          refHiveBlockId,
+          prevRefHiveBlockId,
+          jsVMTimeout,
+          contract,
+          contractVersion,
         );
       }
 
@@ -520,7 +542,7 @@ class SmartContracts {
   static getJSVM(jsVMTimeout) {
     let vm = null;
 
-    vm = JSVMs.find(v => v.inUse === false);
+    vm = JSVMs.find((v) => v.inUse === false);
 
     if (vm === undefined) {
       if (JSVMs.length < MAXJSVMs) {
@@ -540,7 +562,7 @@ class SmartContracts {
       vm = null;
     } else {
       // eslint-disable-next-line no-underscore-dangle
-      Object.keys(vm.vm._context).filter(key => key !== 'VMError' && key !== 'Buffer' && key !== 'api').forEach((key) => {
+      Object.keys(vm.vm._context).filter((key) => key !== 'VMError' && key !== 'Buffer' && key !== 'api').forEach((key) => {
         // eslint-disable-next-line no-underscore-dangle
         delete vm.vm._context[key];
       });
@@ -582,13 +604,22 @@ class SmartContracts {
   }
 
   static async executeSmartContractFromSmartContract(
-    ipc, originalResults, sender, originalParameters,
-    contract, action, parameters,
+    ipc,
+    originalResults,
+    sender,
+    originalParameters,
+    contract,
+    action,
+    parameters,
     blockNumber,
     timestamp,
-    refHiveBlockNumber, refHiveBlockId, prevRefHiveBlockId,
+    refHiveBlockNumber,
+    refHiveBlockId,
+    prevRefHiveBlockId,
     jsVMTimeout,
-    callingContractName, callingContractAction, callingContractVersion,
+    callingContractName,
+    callingContractAction,
+    callingContractVersion,
   ) {
     if (typeof contract !== 'string' || typeof action !== 'string' || (parameters && typeof parameters !== 'string')) return null;
     if (refHiveBlockNumber >= 59377007 && contract === 'mining' && action === 'handleNftChange') return null;

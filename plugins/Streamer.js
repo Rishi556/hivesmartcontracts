@@ -275,7 +275,7 @@ const parseTransactions = (refBlockNumber, block) => {
   return newTransactions;
 };
 
-const sendBlock = block => ipc.send(
+const sendBlock = (block) => ipc.send(
   { to: BC_PLUGIN_NAME, action: BC_PLUGIN_ACTIONS.PRODUCE_NEW_BLOCK_SYNC, payload: block },
 );
 
@@ -384,10 +384,9 @@ const throttledGetBlock = async (blockNumber) => {
       }
     }
   }
-  await new Promise(resolve => pendingRequests.push(resolve));
+  await new Promise((resolve) => pendingRequests.push(resolve));
   return throttledGetBlock(blockNumber);
 };
-
 
 // start at index 1, and rotate.
 const lookaheadBufferSize = 100;
@@ -498,7 +497,7 @@ const startStreaming = (conf) => {
   }).catch((err) => {
     console.error('Stream error:', err.message, 'with', node); // eslint-disable-line no-console
     streamNodes.push(streamNodes.shift());
-    startStreaming(Object.assign({}, conf, { startHiveBlock: getCurrentBlock() }));
+    startStreaming({ ...conf, startHiveBlock: getCurrentBlock() });
   });
 };
 

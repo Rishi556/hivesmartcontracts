@@ -71,9 +71,9 @@ const loadPlugin = (newPlugin) => {
   const plugin = {};
   plugin.name = newPlugin.PLUGIN_NAME;
   plugin.cp = fork(newPlugin.PLUGIN_PATH, [], { silent: true, detached: true });
-  plugin.cp.on('message', msg => route(msg));
-  plugin.cp.stdout.on('data', data => console.log(`[${newPlugin.PLUGIN_NAME}]`, data.toString())); // eslint-disable-line no-console
-  plugin.cp.stderr.on('data', data => console.error(`[${newPlugin.PLUGIN_NAME}]`, data.toString())); // eslint-disable-line no-console
+  plugin.cp.on('message', (msg) => route(msg));
+  plugin.cp.stdout.on('data', (data) => console.log(`[${newPlugin.PLUGIN_NAME}]`, data.toString())); // eslint-disable-line no-console
+  plugin.cp.stderr.on('data', (data) => console.error(`[${newPlugin.PLUGIN_NAME}]`, data.toString())); // eslint-disable-line no-console
 
   plugins[newPlugin.PLUGIN_NAME] = plugin;
 

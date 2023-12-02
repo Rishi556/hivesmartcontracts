@@ -35,12 +35,12 @@ actions.createSSC = async () => {
         const dist = syncDists[i];
         if (dist.tokenBalances) {
           let update = false;
-          const hiveIndex = dist.tokenBalances.findIndex(t => t.symbol === 'SWAP.HIVE');
+          const hiveIndex = dist.tokenBalances.findIndex((t) => t.symbol === 'SWAP.HIVE');
           if (hiveIndex !== -1) {
             dist.tokenBalances[hiveIndex].quantity = api.BigNumber('0').toFixed(8);
             update = true;
           }
-          const simIndex = dist.tokenBalances.findIndex(t => t.symbol === 'SIM');
+          const simIndex = dist.tokenBalances.findIndex((t) => t.symbol === 'SIM');
           if (simIndex !== -1) {
             dist.tokenBalances[simIndex].quantity = api.BigNumber('0').toFixed(3);
             update = true;
@@ -130,9 +130,11 @@ async function validateRecipients(params, tokenRecipients) {
     if (!api.assert(!tokenRecipientsAccounts.has(tokenRecipientsConfig.account), 'tokenRecipients cannot have duplicate accounts')) return false;
     tokenRecipientsAccounts.add(tokenRecipientsConfig.account);
 
-    if (!api.assert(Number.isInteger(tokenRecipientsConfig.pct)
+    if (!api.assert(
+      Number.isInteger(tokenRecipientsConfig.pct)
       && tokenRecipientsConfig.pct >= 1 && tokenRecipientsConfig.pct <= 100,
-    'tokenRecipients pct must be an integer from 1 to 100')) return false;
+      'tokenRecipients pct must be an integer from 1 to 100',
+    )) return false;
     tokenRecipientsTotalShare += tokenRecipientsConfig.pct;
 
     if (!api.assert(['user', 'contract'].includes(tokenRecipientsConfig.type), 'tokenRecipients type must be user or contract')) return false;
@@ -312,7 +314,7 @@ actions.setActive = async (payload) => {
 async function updateTokenBalances(dist, token, quantity) {
   const upDist = dist;
   if (upDist.tokenBalances) {
-    const tIndex = upDist.tokenBalances.findIndex(t => t.symbol === token.symbol);
+    const tIndex = upDist.tokenBalances.findIndex((t) => t.symbol === token.symbol);
     if (tIndex === -1) {
       upDist.tokenBalances.push({ symbol: token.symbol, quantity });
     } else {
@@ -347,7 +349,7 @@ actions.deposit = async (payload) => {
     // deposit requested tokens to contract
     const res = await api.executeSmartContract('tokens', 'transferToContract', { symbol, quantity, to: 'distribution' });
     if (res.errors === undefined
-      && res.events && res.events.find(el => el.contract === 'tokens' && el.event === 'transferToContract' && el.data.from === api.sender && el.data.to === 'distribution' && el.data.quantity === quantity) !== undefined) {
+      && res.events && res.events.find((el) => el.contract === 'tokens' && el.event === 'transferToContract' && el.data.from === api.sender && el.data.to === 'distribution' && el.data.quantity === quantity) !== undefined) {
       await updateTokenBalances(dist, depToken, quantity);
       api.emit('deposit', { distId: id, symbol, quantity });
     }
@@ -410,7 +412,9 @@ async function getPoolRecipients(params, dist) {
   while ((processQuery !== null
       && processQuery.length === params.processQueryLimit)
       || offset === 0) {
-    processQuery = await api.db.findInTable('marketpools', 'liquidityPositions',
+    processQuery = await api.db.findInTable(
+      'marketpools',
+      'liquidityPositions',
       {
         tokenPair: dist.tokenPair,
         account: { $nin: dist.excludeAccount },
@@ -418,7 +422,8 @@ async function getPoolRecipients(params, dist) {
       },
       params.processQueryLimit,
       offset,
-      [{ index: '_id', descending: false }]);
+      [{ index: '_id', descending: false }],
+    );
     for (let i = 0; i < processQuery.length; i += 1) {
       const lp = processQuery[i];
       lp.effShares = await getEffectiveShares(params, dist, lp);
@@ -433,8 +438,11 @@ async function payRecipient(account, symbol, quantity, type = 'user', contractPa
   if (api.BigNumber(quantity).gt(0)) {
     const res = await api.transferTokens(account, symbol, quantity, type);
     if (type === 'contract' && contractPayload) {
-      await api.executeSmartContract(account, 'receiveDistTokens',
-        { data: contractPayload, symbol, quantity });
+      await api.executeSmartContract(
+        account,
+        'receiveDistTokens',
+        { data: contractPayload, symbol, quantity },
+      );
     }
     if (res.errors) {
       api.debug(`Error paying out distribution of ${quantity} ${symbol} to ${account} (TXID ${api.transactionId}): \n${res.errors}`);
@@ -448,7 +456,7 @@ async function payRecipient(account, symbol, quantity, type = 'user', contractPa
 async function runDistribution(dist, params, flush = false) {
   const blockDate = new Date(`${api.hiveBlockTimestamp}.000Z`);
   const upDist = JSON.parse(JSON.stringify(dist));
-  const payTokens = dist.tokenBalances.filter(d => api.BigNumber(d.quantity).gt(0));
+  const payTokens = dist.tokenBalances.filter((d) => api.BigNumber(d.quantity).gt(0));
   if (payTokens.length > 0) {
     if (dist.strategy === 'fixed') {
       const { tokenRecipients } = dist;
@@ -456,7 +464,7 @@ async function runDistribution(dist, params, flush = false) {
         const tr = tokenRecipients.shift();
         for (let i = 0; i < payTokens.length; i += 1) {
           const payToken = await api.db.findOneInTable('tokens', 'tokens', { symbol: payTokens[i].symbol });
-          const minPayout = dist.tokenMinPayout.find(p => p.symbol === payTokens[i].symbol);
+          const minPayout = dist.tokenMinPayout.find((p) => p.symbol === payTokens[i].symbol);
           if (api.BigNumber(payTokens[i].quantity).gt(minPayout.quantity) || flush) {
             const payoutShare = api.BigNumber(payTokens[i].quantity)
               .multipliedBy(tr.pct)
@@ -471,7 +479,7 @@ async function runDistribution(dist, params, flush = false) {
                 tr.type,
                 tr.contractPayload || null,
               )) {
-                const tbIndex = upDist.tokenBalances.findIndex(b => b.symbol === payTokens[i].symbol);
+                const tbIndex = upDist.tokenBalances.findIndex((b) => b.symbol === payTokens[i].symbol);
                 upDist.tokenBalances[tbIndex].quantity = api.BigNumber(upDist.tokenBalances[tbIndex].quantity)
                   .minus(payoutShare)
                   .toFixed(payToken.precision, api.BigNumber.ROUND_DOWN);
@@ -513,7 +521,7 @@ async function runDistribution(dist, params, flush = false) {
                 });
               }
               if (payResult) {
-                const tbIndex = upDist.tokenBalances.findIndex(b => b.symbol === payTokens[i].symbol);
+                const tbIndex = upDist.tokenBalances.findIndex((b) => b.symbol === payTokens[i].symbol);
                 upDist.tokenBalances[tbIndex].quantity = api.BigNumber(upDist.tokenBalances[tbIndex].quantity)
                   .minus(payoutQty)
                   .toFixed(payToken.precision, api.BigNumber.ROUND_DOWN);
@@ -576,7 +584,8 @@ actions.checkPendingDistributions = async () => {
     const blockDate = new Date(`${api.hiveBlockTimestamp}.000Z`);
     const tickTime = api.BigNumber(blockDate.getTime()).minus(params.distTickHours * 3600 * 1000).toNumber();
 
-    const pendingDists = await api.db.find('batches',
+    const pendingDists = await api.db.find(
+      'batches',
       {
         active: true,
         numTicksLeft: { $gt: 0 },
@@ -587,7 +596,8 @@ actions.checkPendingDistributions = async () => {
       },
       params.maxDistributionsLimit,
       0,
-      [{ index: 'lastTickTime', descending: false }, { index: '_id', descending: false }]);
+      [{ index: 'lastTickTime', descending: false }, { index: '_id', descending: false }],
+    );
 
     // process distributions or pending payments
     if (pendingDists.length > 0) {
@@ -595,7 +605,8 @@ actions.checkPendingDistributions = async () => {
         await runDistribution(pendingDists[i], params);
       }
     } else {
-      const pendingPay = await api.db.find('pendingPayments',
+      const pendingPay = await api.db.find(
+        'pendingPayments',
         {
           dueTime: {
             $lt: blockDate.getTime(),
@@ -603,7 +614,8 @@ actions.checkPendingDistributions = async () => {
         },
         params.maxDistributionsLimit,
         0,
-        [{ index: 'dueTime', descending: false }, { index: '_id', descending: false }]);
+        [{ index: 'dueTime', descending: false }, { index: '_id', descending: false }],
+      );
 
       if (pendingPay.length > 0) {
         for (let i = 0; i < pendingPay.length; i += 1) {

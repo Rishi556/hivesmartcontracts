@@ -101,7 +101,7 @@ const hasValidType = (token, type) => {
 
 const transferIsSuccessful = (result, action, from, to, symbol, quantity) => {
   if (result.errors === undefined
-    && result.events && result.events.find(el => el.contract === 'tokens'
+    && result.events && result.events.find((el) => el.contract === 'tokens'
     && el.event === action
     && el.data.from === from
     && el.data.to === to
@@ -219,13 +219,15 @@ const processAirdrop = async (airdrop, maxTransactionsPerBlock) => {
 actions.checkPendingAirdrops = async () => {
   if (api.assert(api.sender === 'null', 'not authorized')) {
     const params = await api.db.findOne('params', {});
-    const pendingAirdrops = await api.db.find('pendingAirdrops',
+    const pendingAirdrops = await api.db.find(
+      'pendingAirdrops',
       {
         blockNumber: { $lt: api.blockNumber },
       },
       params.maxAirdropsPerBlock,
       0,
-      [{ index: '_id', descending: false }]);
+      [{ index: '_id', descending: false }],
+    );
 
     for (let i = 0; i < pendingAirdrops.length; i += 1) {
       const airdrop = pendingAirdrops[i];

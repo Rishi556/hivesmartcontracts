@@ -785,7 +785,6 @@ const RESERVED_SYMBOLS = {
   LATINUM: 'latinum',
 };
 
-
 actions.createSSC = async () => {
   const tableExists = await api.db.tableExists('tokens');
   if (tableExists === false) {
@@ -820,7 +819,7 @@ const calculateBalance = (balance, quantity, precision, add) => (add
   ? api.BigNumber(balance).plus(quantity).toFixed(precision)
   : api.BigNumber(balance).minus(quantity).toFixed(precision));
 
-const countDecimals = value => api.BigNumber(value).dp();
+const countDecimals = (value) => api.BigNumber(value).dp();
 
 const addStake = async (account, token, quantity) => {
   let balance = await api.db.findOne('balances', { account, symbol: token.symbol });
@@ -868,9 +867,7 @@ const subStake = async (account, token, quantity) => {
     const originalPendingStake = balance.pendingUnstake;
 
     balance.stake = calculateBalance(balance.stake, quantity, token.precision, false);
-    balance.pendingUnstake = calculateBalance(
-      balance.pendingUnstake, quantity, token.precision, true,
-    );
+    balance.pendingUnstake = calculateBalance(balance.pendingUnstake, quantity, token.precision, true);
 
     if (api.assert(api.BigNumber(balance.stake).lt(originalStake)
       && api.BigNumber(balance.pendingUnstake).gt(originalPendingStake), 'cannot subtract')) {
@@ -909,7 +906,6 @@ const addBalance = async (account, token, quantity, table) => {
     balance.account = account;
     balance.symbol = token.symbol;
     balance.balance = quantity;
-
 
     await api.db.insert(table, balance);
 
@@ -1059,16 +1055,14 @@ actions.create = async (payload) => {
       && maxSupply && typeof maxSupply === 'string' && !api.BigNumber(maxSupply).isNaN(), 'invalid params')) {
     // the precision must be between 0 and 8 and must be an integer
     // the max supply must be positive
-    if (api.assert(
-      symbol.length > 0
+    if (api.assert(symbol.length > 0
       && symbol.length <= 10
       && api.validator.isAlpha(api.validator.blacklist(symbol, '.'))
       && api.validator.isUppercase(symbol)
       && (symbol.indexOf('.') === -1
         || (symbol.indexOf('.') > 0
           && symbol.indexOf('.') < symbol.length - 1
-          && symbol.indexOf('.') === symbol.lastIndexOf('.'))), 'invalid symbol: uppercase letters only and one "." allowed, max length of 10',
-    )
+          && symbol.indexOf('.') === symbol.lastIndexOf('.'))), 'invalid symbol: uppercase letters only and one "." allowed, max length of 10')
       && api.assert(RESERVED_SYMBOLS[symbol] === undefined || api.sender === RESERVED_SYMBOLS[symbol], 'cannot use this symbol')
       && api.assert(api.validator.isAlphanumeric(api.validator.blacklist(name, ' ')) && name.length > 0 && name.length <= 50, 'invalid name: letters, numbers, whitespaces only, max length of 50')
       && api.assert(url === undefined || url.length <= 255, 'invalid url: max length of 255')
@@ -1154,9 +1148,7 @@ actions.issue = async (payload) => {
           token.supply = calculateBalance(token.supply, quantity, token.precision, true);
 
           if (finalTo !== 'null') {
-            token.circulatingSupply = calculateBalance(
-              token.circulatingSupply, quantity, token.precision, true,
-            );
+            token.circulatingSupply = calculateBalance(token.circulatingSupply, quantity, token.precision, true);
           }
 
           await api.db.update('tokens', token);
@@ -1200,9 +1192,7 @@ actions.issueToContract = async (payload) => {
           token.supply = calculateBalance(token.supply, quantity, token.precision, true);
 
           if (finalTo !== 'null') {
-            token.circulatingSupply = calculateBalance(
-              token.circulatingSupply, quantity, token.precision, true,
-            );
+            token.circulatingSupply = calculateBalance(token.circulatingSupply, quantity, token.precision, true);
           }
 
           await api.db.update('tokens', token);
@@ -1246,9 +1236,7 @@ actions.transfer = async (payload) => {
             }
 
             if (finalTo === 'null') {
-              token.circulatingSupply = calculateBalance(
-                token.circulatingSupply, quantity, token.precision, false,
-              );
+              token.circulatingSupply = calculateBalance(token.circulatingSupply, quantity, token.precision, false);
               await api.db.update('tokens', token);
             }
 
@@ -1295,9 +1283,7 @@ actions.transferToContract = async (payload) => {
               await addBalance(finalFrom, token, quantity, 'balances');
             } else {
               if (finalTo === 'null') {
-                token.circulatingSupply = calculateBalance(
-                  token.circulatingSupply, quantity, token.precision, false,
-                );
+                token.circulatingSupply = calculateBalance(token.circulatingSupply, quantity, token.precision, false);
                 await api.db.update('tokens', token);
               }
 
@@ -1348,9 +1334,7 @@ actions.transferFromContract = async (payload) => {
                 await addBalance(from, token, quantity, 'contractsBalances');
               } else {
                 if (finalTo === 'null') {
-                  token.circulatingSupply = calculateBalance(
-                    token.circulatingSupply, quantity, token.precision, false,
-                  );
+                  token.circulatingSupply = calculateBalance(token.circulatingSupply, quantity, token.precision, false);
                   await api.db.update('tokens', token);
                 }
 
@@ -1408,20 +1392,14 @@ const processUnstake = async (unstake) => {
       const originalBalance = balance.balance;
       const originalPendingStake = balance.pendingUnstake;
 
-      balance.balance = calculateBalance(
-        balance.balance, tokensToRelease, token.precision, true,
-      );
-      balance.pendingUnstake = calculateBalance(
-        balance.pendingUnstake, tokensToRelease, token.precision, false,
-      );
+      balance.balance = calculateBalance(balance.balance, tokensToRelease, token.precision, true);
+      balance.pendingUnstake = calculateBalance(balance.pendingUnstake, tokensToRelease, token.precision, false);
 
       if (api.assert(api.BigNumber(balance.pendingUnstake).lt(originalPendingStake)
         && api.BigNumber(balance.balance).gt(originalBalance), 'cannot subtract')) {
         await api.db.update('balances', balance);
 
-        token.totalStaked = calculateBalance(
-          token.totalStaked, tokensToRelease, token.precision, false,
-        );
+        token.totalStaked = calculateBalance(token.totalStaked, tokensToRelease, token.precision, false);
 
         await api.db.update('tokens', token);
 
@@ -1672,12 +1650,8 @@ const processCancelUnstake = async (unstake) => {
     const originalStake = balance.stake;
     const originalPendingStake = balance.pendingUnstake;
 
-    balance.stake = calculateBalance(
-      balance.stake, quantityLeft, token.precision, true,
-    );
-    balance.pendingUnstake = calculateBalance(
-      balance.pendingUnstake, quantityLeft, token.precision, false,
-    );
+    balance.stake = calculateBalance(balance.stake, quantityLeft, token.precision, true);
+    balance.pendingUnstake = calculateBalance(balance.pendingUnstake, quantityLeft, token.precision, false);
 
     if (api.assert(api.BigNumber(balance.pendingUnstake).lt(originalPendingStake)
       && api.BigNumber(balance.stake).gt(originalStake), 'cannot subtract')) {
@@ -1831,19 +1805,13 @@ actions.delegate = async (payload) => {
 
           if (delegation == null) {
             // update balanceFrom
-            balanceFrom.stake = calculateBalance(
-              balanceFrom.stake, quantity, token.precision, false,
-            );
-            balanceFrom.delegationsOut = calculateBalance(
-              balanceFrom.delegationsOut, quantity, token.precision, true,
-            );
+            balanceFrom.stake = calculateBalance(balanceFrom.stake, quantity, token.precision, false);
+            balanceFrom.delegationsOut = calculateBalance(balanceFrom.delegationsOut, quantity, token.precision, true);
 
             await api.db.update('balances', balanceFrom);
 
             // update balanceTo
-            balanceTo.delegationsIn = calculateBalance(
-              balanceTo.delegationsIn, quantity, token.precision, true,
-            );
+            balanceTo.delegationsIn = calculateBalance(balanceTo.delegationsIn, quantity, token.precision, true);
 
             await api.db.update('balances', balanceTo);
 
@@ -1871,26 +1839,18 @@ actions.delegate = async (payload) => {
             // if a delegation already exists, increase it
 
             // update balanceFrom
-            balanceFrom.stake = calculateBalance(
-              balanceFrom.stake, quantity, token.precision, false,
-            );
-            balanceFrom.delegationsOut = calculateBalance(
-              balanceFrom.delegationsOut, quantity, token.precision, true,
-            );
+            balanceFrom.stake = calculateBalance(balanceFrom.stake, quantity, token.precision, false);
+            balanceFrom.delegationsOut = calculateBalance(balanceFrom.delegationsOut, quantity, token.precision, true);
 
             await api.db.update('balances', balanceFrom);
 
             // update balanceTo
-            balanceTo.delegationsIn = calculateBalance(
-              balanceTo.delegationsIn, quantity, token.precision, true,
-            );
+            balanceTo.delegationsIn = calculateBalance(balanceTo.delegationsIn, quantity, token.precision, true);
 
             await api.db.update('balances', balanceTo);
 
             // update delegation
-            delegation.quantity = calculateBalance(
-              delegation.quantity, quantity, token.precision, true,
-            );
+            delegation.quantity = calculateBalance(delegation.quantity, quantity, token.precision, true);
 
             // update the timestamp
             delegation.updated = timestamp;
@@ -1949,26 +1909,18 @@ actions.undelegate = async (payload) => {
             if (api.assert(delegation !== null, 'delegation does not exist')
               && api.assert(api.BigNumber(delegation.quantity).gte(quantity), 'overdrawn delegation')) {
               // update balanceTo
-              balanceTo.pendingUndelegations = calculateBalance(
-                balanceFrom.pendingUndelegations, quantity, token.precision, true,
-              );
-              balanceTo.delegationsOut = calculateBalance(
-                balanceTo.delegationsOut, quantity, token.precision, false,
-              );
+              balanceTo.pendingUndelegations = calculateBalance(balanceFrom.pendingUndelegations, quantity, token.precision, true);
+              balanceTo.delegationsOut = calculateBalance(balanceTo.delegationsOut, quantity, token.precision, false);
 
               await api.db.update('balances', balanceTo);
 
               // update balanceFrom
-              balanceFrom.delegationsIn = calculateBalance(
-                balanceFrom.delegationsIn, quantity, token.precision, false,
-              );
+              balanceFrom.delegationsIn = calculateBalance(balanceFrom.delegationsIn, quantity, token.precision, false);
 
               await api.db.update('balances', balanceFrom);
 
               // update delegation
-              delegation.quantity = calculateBalance(
-                delegation.quantity, quantity, token.precision, false,
-              );
+              delegation.quantity = calculateBalance(delegation.quantity, quantity, token.precision, false);
 
               if (api.BigNumber(delegation.quantity).gt(0)) {
                 await api.db.update('delegations', delegation);
@@ -2023,12 +1975,8 @@ const processUndelegation = async (undelegation) => {
     const originalPendingUndelegations = balance.pendingUndelegations;
 
     // update the balance
-    balance.stake = calculateBalance(
-      balance.stake, quantity, token.precision, true,
-    );
-    balance.pendingUndelegations = calculateBalance(
-      balance.pendingUndelegations, quantity, token.precision, false,
-    );
+    balance.stake = calculateBalance(balance.stake, quantity, token.precision, true);
+    balance.pendingUndelegations = calculateBalance(balance.pendingUndelegations, quantity, token.precision, false);
 
     if (api.assert(api.BigNumber(balance.pendingUndelegations).lt(originalPendingUndelegations)
       && api.BigNumber(balance.stake).gt(originalStake), 'cannot subtract')) {

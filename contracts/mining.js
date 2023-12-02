@@ -17,7 +17,6 @@ const PROPERTY_OPS = {
 };
 const MINING_POWER_FIELD_INDEX = '_miningPower';
 
-
 actions.createSSC = async () => {
   const tableExists = await api.db.tableExists('miningPower');
   if (tableExists === false) {
@@ -142,8 +141,10 @@ function validateNftTypeMap(typeMap, properties) {
       const typeProperty = api.BigNumber(typeConfig[k]);
       if (!api.assert(!typeProperty.isNaN() && typeProperty.isFinite(), 'nftTokenMiner typeConfig invalid')) return false;
       if (properties[k].op === 'MULTIPLY') {
-        if (!api.assert(typeProperty.gte(0.01) && typeProperty.lte(100),
-          'nftTokenMiner typeConfig MULTIPLY property should be between 0.01 and 100')) return false;
+        if (!api.assert(
+          typeProperty.gte(0.01) && typeProperty.lte(100),
+          'nftTokenMiner typeConfig MULTIPLY property should be between 0.01 and 100',
+        )) return false;
       }
     }
   }
@@ -152,9 +153,11 @@ function validateNftTypeMap(typeMap, properties) {
 
 async function validateTokenMiners(tokenMiners, nftTokenMiner) {
   if (!api.assert(tokenMiners && Array.isArray(tokenMiners), 'tokenMiners invalid')) return false;
-  if (!api.assert((tokenMiners.length >= 1 && tokenMiners.length <= 2)
+  if (!api.assert(
+    (tokenMiners.length >= 1 && tokenMiners.length <= 2)
       || (nftTokenMiner && tokenMiners.length === 0),
-  'only 1 or 2 tokenMiners allowed')) return false;
+    'only 1 or 2 tokenMiners allowed',
+  )) return false;
   const tokenMinerSymbols = new Set();
   for (let i = 0; i < tokenMiners.length; i += 1) {
     const tokenMinerConfig = tokenMiners[i];
@@ -165,9 +168,11 @@ async function validateTokenMiners(tokenMiners, nftTokenMiner) {
     const { symbol } = tokenMinerConfig;
     const token = await api.db.findOneInTable('tokens', 'tokens', { symbol });
     if (!api.assert(token && token.stakingEnabled, 'tokenMiners must have staking enabled')) return false;
-    if (!api.assert(Number.isInteger(tokenMinerConfig.multiplier)
+    if (!api.assert(
+      Number.isInteger(tokenMinerConfig.multiplier)
       && tokenMinerConfig.multiplier >= 1 && tokenMinerConfig.multiplier <= 100,
-    'tokenMiner multiplier must be an integer from 1 to 100')) return false;
+      'tokenMiner multiplier must be an integer from 1 to 100',
+    )) return false;
   }
   if (nftTokenMiner) {
     if (!api.assert(nftTokenMiner.symbol
@@ -194,8 +199,12 @@ async function validateTokenMiners(tokenMiners, nftTokenMiner) {
   return true;
 }
 
-async function validateTokenMinersChange(oldTokenMiners, tokenMiners, oldNftTokenMiner,
-  nftTokenMiner) {
+async function validateTokenMinersChange(
+  oldTokenMiners,
+  tokenMiners,
+  oldNftTokenMiner,
+  nftTokenMiner,
+) {
   if (!api.assert(tokenMiners.length === oldTokenMiners.length, 'cannot change which tokens are in tokenMiners')) return false;
   let changed = false;
   for (let i = 0; i < tokenMiners.length; i += 1) {
@@ -277,14 +286,12 @@ function computeMiningPower(miningPower, tokenMiners, nftTokenMiner) {
   return api.BigNumber(0);
 }
 
-async function updateMiningPower(
-  pool, token, account, stakedQuantity, delegatedQuantity, updatePoolTimestamp,
-) {
+async function updateMiningPower(pool, token, account, stakedQuantity, delegatedQuantity, updatePoolTimestamp) {
   let miningPower = await api.db.findOne('miningPower', { id: pool.id, account });
   let stake = api.BigNumber(stakedQuantity);
   let oldMiningPower = api.BigNumber(0);
   stake = stake.plus(delegatedQuantity);
-  const tokenIndex = pool.tokenMiners.findIndex(t => t.symbol === token);
+  const tokenIndex = pool.tokenMiners.findIndex((t) => t.symbol === token);
   if (!miningPower) {
     const balances = {};
     balances[tokenIndex] = stake;
@@ -558,9 +565,7 @@ async function initMiningPower(pool, updatePoolTimestamp, params, token, lastId)
     for (let i = 0; i < balances.length; i += 1) {
       const balance = balances[i];
       if (api.BigNumber(balance.stake).gt(0) || api.BigNumber(balance.delegationsIn).gt(0)) {
-        const adjusted = await updateMiningPower(
-          pool, token, balance.account, balance.stake, balance.delegationsIn, updatePoolTimestamp,
-        );
+        const adjusted = await updateMiningPower(pool, token, balance.account, balance.stake, balance.delegationsIn, updatePoolTimestamp);
         adjustedPower = adjustedPower.plus(adjusted);
       }
       lastIdProcessed = balance._id;
@@ -627,9 +632,7 @@ async function resumePowerUpdate(pool, params) {
 
   if (tokenIndex < pool.tokenMiners.length) {
     const tokenConfig = pool.tokenMiners[tokenIndex];
-    const { adjustedPower, nextId, complete } = await initMiningPower(
-      pool, updatePoolTimestamp, params, tokenConfig.symbol, lastId,
-    );
+    const { adjustedPower, nextId, complete } = await initMiningPower(pool, updatePoolTimestamp, params, tokenConfig.symbol, lastId);
     // eslint-disable-next-line no-param-reassign
     pool.totalPower = api.BigNumber(pool.totalPower)
       .plus(adjustedPower);
@@ -641,9 +644,7 @@ async function resumePowerUpdate(pool, params) {
     }
   } else if (pool.nftTokenMiner && nftTokenIndex < 1) {
     const { nftTokenMiner } = pool;
-    const { adjustedPower, nextId, complete } = await initNftMiningPower(
-      pool, updatePoolTimestamp, params, nftTokenMiner, lastId,
-    );
+    const { adjustedPower, nextId, complete } = await initNftMiningPower(pool, updatePoolTimestamp, params, nftTokenMiner, lastId);
     // eslint-disable-next-line no-param-reassign
     pool.totalPower = api.BigNumber(pool.totalPower)
       .plus(adjustedPower);
@@ -740,9 +741,7 @@ actions.updatePool = async (payload) => {
         if (api.assert(minedTokenObject && (minedTokenObject.issuer === api.sender || (minedTokenObject.symbol === "'${CONSTANTS.UTILITY_TOKEN_SYMBOL}$'" && api.sender === api.owner)), 'must be issuer of minedToken')
           && api.assert(api.BigNumber(lotteryAmount).dp() <= minedTokenObject.precision, 'minedToken precision mismatch for lotteryAmount')) {
           if (!callingContractInfo) {
-            const validMinersChange = await validateTokenMinersChange(
-              pool.tokenMiners, tokenMiners, pool.nftTokenMiner, nftTokenMiner,
-            );
+            const validMinersChange = await validateTokenMinersChange(pool.tokenMiners, tokenMiners, pool.nftTokenMiner, nftTokenMiner);
             if (validMinersChange) {
               pool.lotteryWinners = lotteryWinners;
               pool.lotteryIntervalHours = lotteryIntervalHours;
@@ -801,7 +800,7 @@ actions.changeNftProperty = async (payload) => {
   const pool = await api.db.findOne('pools', { id });
   if (!api.assert(pool, 'pool id not found')) return;
 
-  const propertyIndex = pool.nftTokenMiner.properties.findIndex(p => p.name === propertyName);
+  const propertyIndex = pool.nftTokenMiner.properties.findIndex((p) => p.name === propertyName);
   const property = pool.nftTokenMiner.properties[propertyIndex];
   if (!api.assert(property && property.burnChange, 'property not enabled for burn change')) return;
 
@@ -846,7 +845,7 @@ actions.changeNftProperty = async (payload) => {
 function generatePoolId(pool) {
   const tokenMinerString = pool.externalContract && pool.externalMiners
     ? `EXT-${pool.externalMiners.replace(':', '')}`
-    : pool.tokenMiners.map(t => t.symbol.replace('.', '-')).sort().join(',');
+    : pool.tokenMiners.map((t) => t.symbol.replace('.', '-')).sort().join(',');
   const nftTokenMinerString = pool.nftTokenMiner ? `:${pool.nftTokenMiner.symbol}` : '';
   return `${pool.minedToken.replace('.', '-')}:${tokenMinerString}${nftTokenMinerString}`;
 }
@@ -944,8 +943,11 @@ actions.createPool = async (payload) => {
 async function runLottery(pool, params) {
   const blockDate = new Date(`${api.hiveBlockTimestamp}.000Z`);
   const winningNumbers = [];
-  const minedToken = await api.db.findOneInTable('tokens', 'tokens',
-    { symbol: pool.minedToken });
+  const minedToken = await api.db.findOneInTable(
+    'tokens',
+    'tokens',
+    { symbol: pool.minedToken },
+  );
   const winningAmount = api.BigNumber(pool.lotteryAmount).dividedBy(pool.lotteryWinners)
     .toFixed(minedToken.precision, api.BigNumber.ROUND_HALF_UP);
   // determine winning numbers
@@ -967,15 +969,22 @@ async function runLottery(pool, params) {
   const winners = [];
   while (computedWinners < pool.lotteryWinners) {
     if (!pool.externalContract) {
-      miningPowers = await api.db.find('miningPower', { id: pool.id, power: { $gt: { $numberDecimal: '0' } } },
+      miningPowers = await api.db.find(
+        'miningPower',
+        { id: pool.id, power: { $gt: { $numberDecimal: '0' } } },
         params.processQueryLimit,
         offset,
-        [{ index: 'power', descending: true }, { index: '_id', descending: false }]);
+        [{ index: 'power', descending: true }, { index: '_id', descending: false }],
+      );
     } else if (pool.externalContract === 'marketpools') {
-      miningPowers = await api.db.findInTable('marketpools', 'liquidityPositions', { tokenPair: pool.externalMiners },
+      miningPowers = await api.db.findInTable(
+        'marketpools',
+        'liquidityPositions',
+        { tokenPair: pool.externalMiners },
         params.processQueryLimit,
         offset,
-        [{ index: '_id', descending: false }]);
+        [{ index: '_id', descending: false }],
+      );
       for (let i = 0; i < miningPowers.length; i += 1) {
         miningPowers[i].power = {
           $numberDecimal: api.BigNumber(miningPowers[i].shares)
@@ -1008,8 +1017,11 @@ async function runLottery(pool, params) {
   api.emit('miningLottery', { poolId: pool.id, winners });
   for (let i = 0; i < winners.length; i += 1) {
     const winner = winners[i];
-    await api.executeSmartContract('tokens', 'issue',
-      { to: winner.winner, symbol: minedToken.symbol, quantity: winningAmount });
+    await api.executeSmartContract(
+      'tokens',
+      'issue',
+      { to: winner.winner, symbol: minedToken.symbol, quantity: winningAmount },
+    );
   }
   // eslint-disable-next-line no-param-reassign
   pool.nextLotteryTimestamp = api.BigNumber(blockDate.getTime())
@@ -1023,18 +1035,21 @@ actions.checkPendingLotteries = async () => {
     const timestamp = blockDate.getTime();
 
     const params = await api.db.findOne('params', {});
-    const updatingLotteries = await api.db.find('pools',
+    const updatingLotteries = await api.db.find(
+      'pools',
       {
         'updating.inProgress': true,
       },
       params.maxLotteriesPerBlock,
       0,
-      [{ index: 'id', descending: false }]);
+      [{ index: 'id', descending: false }],
+    );
     for (let i = 0; i < updatingLotteries.length; i += 1) {
       const pool = updatingLotteries[i];
       await resumePowerUpdate(pool, params);
     }
-    const pendingLotteries = await api.db.find('pools',
+    const pendingLotteries = await api.db.find(
+      'pools',
       {
         active: true,
         'updating.inProgress': false,
@@ -1044,7 +1059,8 @@ actions.checkPendingLotteries = async () => {
       },
       params.maxLotteriesPerBlock,
       0,
-      [{ index: 'id', descending: false }]);
+      [{ index: 'id', descending: false }],
+    );
 
     for (let i = 0; i < pendingLotteries.length; i += 1) {
       const pool = pendingLotteries[i];
@@ -1057,8 +1073,10 @@ actions.handleStakeChange = async (payload) => {
   const {
     account, symbol, quantity, delegated, callingContractInfo,
   } = payload;
-  if (api.assert(callingContractInfo && callingContractInfo.name === 'tokens',
-    'must be called from tokens contract')) {
+  if (api.assert(
+    callingContractInfo && callingContractInfo.name === 'tokens',
+    'must be called from tokens contract',
+  )) {
     await findAndProcessAll('mining', 'tokenPools', { symbol }, async (tokenPool) => {
       const pool = await api.db.findOne('pools', { id: tokenPool.id });
       let adjusted;
@@ -1079,8 +1097,10 @@ actions.handleNftDelegationChange = async (payload) => {
   const {
     symbol, nft, add, callingContractInfo,
   } = payload;
-  if (api.assert(callingContractInfo && callingContractInfo.name === 'nft',
-    'must be called from nft contract')) {
+  if (api.assert(
+    callingContractInfo && callingContractInfo.name === 'nft',
+    'must be called from nft contract',
+  )) {
     await findAndProcessAll('mining', 'nftTokenPools', { symbol }, async (tokenPool) => {
       const pool = await api.db.findOne('pools', { id: tokenPool.id });
       if (pool.updating.inProgress
@@ -1121,8 +1141,10 @@ actions.handleNftSetProperty = async (payload) => {
   const {
     symbol, nft, propertyName, oldValue, callingContractInfo,
   } = payload;
-  if (api.assert(callingContractInfo && callingContractInfo.name === 'nft',
-    'must be called from nft contract')) {
+  if (api.assert(
+    callingContractInfo && callingContractInfo.name === 'nft',
+    'must be called from nft contract',
+  )) {
     const newValue = nft.properties[propertyName];
     if (oldValue === newValue) {
       return;

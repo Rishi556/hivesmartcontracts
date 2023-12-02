@@ -239,30 +239,30 @@ actions.register = async (payload) => {
 
     if (api.assert(witness === null || witness.account === api.sender, 'a witness is already using this signing key')) {
       // check if there is already a witness with the same IP/Port or domain
-      if (IP){
+      if (IP) {
         witness = await api.db.findOne('witnesses', { IP, P2PPort });
       } else {
         witness = await api.db.findOne('witnesses', { domain, P2PPort });
       }
-      
+
       if (api.assert(witness === null || witness.account === api.sender, `a witness is already using this ${IP ? 'IP' : 'domain'}/Port`)) {
         witness = await api.db.findOne('witnesses', { account: api.sender });
 
         // if the witness is already registered
         if (witness) {
           let useUnsets = false;
-          let unsets = {};
-          if (IP){
+          const unsets = {};
+          if (IP) {
             witness.IP = IP;
-            if (witness.domain){
-              delete witness['domain'];
+            if (witness.domain) {
+              delete witness.domain;
               unsets.domain = '';
               useUnsets = true;
             }
           } else {
             witness.domain = domain;
-            if (witness.IP){
-              delete witness['IP'];
+            if (witness.IP) {
+              delete witness.IP;
               unsets.IP = '';
               useUnsets = true;
             }
@@ -271,7 +271,7 @@ actions.register = async (payload) => {
           witness.P2PPort = P2PPort;
           witness.signingKey = signingKey;
           witness.enabled = enabled;
-          if (useUnsets){
+          if (useUnsets) {
             await api.db.update('witnesses', witness, unsets);
           } else {
             await api.db.update('witnesses', witness);
@@ -290,7 +290,7 @@ actions.register = async (payload) => {
             lastRoundVerified: null,
             lastBlockVerified: null,
           };
-          if (IP){
+          if (IP) {
             witness.IP = IP;
           } else {
             witness.domain = domain;
@@ -408,7 +408,6 @@ actions.disapprove = async (payload) => {
     // check if witness exists
     const witnessRec = await api.db.findOne('witnesses', { account: witness });
 
-
     if (api.assert(witnessRec, 'witness does not exist')) {
       let acct = await api.db.findOne('accounts', { account: api.sender });
 
@@ -523,7 +522,7 @@ const changeCurrentWitness = async () => {
       // and different from an already scheduled witness for this round
       if (witness.enabled === true
         && witness.account !== previousRoundWitness
-        && schedules.find(s => s.witness === witness.account) === undefined
+        && schedules.find((s) => s.witness === witness.account) === undefined
         && api.BigNumber(randomWeight).lte(accWeight)) {
         api.debug(`changed current witness from ${schedule.witness} to ${witness.account}`);
         schedule.witness = witness.account;
@@ -878,16 +877,14 @@ actions.proposeRound = async (payload) => {
         let signaturesChecked = 0;
         const verifiedBlockInformation = [];
         const currentWitnessInfo = await api.db.findOne('witnesses', { account: currentWitness });
-        const currentWitnessSignature = signatures.find(s => s[0] === currentWitness);
+        const currentWitnessSignature = signatures.find((s) => s[0] === currentWitness);
         for (let index = 0; index < schedules.length; index += 1) {
           const scheduledWitness = schedules[index];
           const witness = await api.db.findOne('witnesses', { account: scheduledWitness.witness });
           if (witness !== null) {
-            const signature = signatures.find(s => s[0] === witness.account);
+            const signature = signatures.find((s) => s[0] === witness.account);
             if (signature) {
-              if (api.checkSignature(
-                calculatedRoundHash, signature[1], witness.signingKey, true,
-              )) {
+              if (api.checkSignature(calculatedRoundHash, signature[1], witness.signingKey, true)) {
                 api.debug(`witness ${witness.account} signed round ${round}`);
                 signaturesChecked += 1;
               }

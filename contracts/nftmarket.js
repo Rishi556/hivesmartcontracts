@@ -19,17 +19,17 @@ actions.createSSC = async () => {
 // check that token transfers succeeded
 const isTokenTransferVerified = (result, from, to, symbol, quantity, eventStr) => {
   if (result.errors === undefined
-    && result.events && result.events.find(el => el.contract === 'tokens' && el.event === eventStr
+    && result.events && result.events.find((el) => el.contract === 'tokens' && el.event === eventStr
     && el.data.from === from && el.data.to === to && el.data.quantity === quantity && el.data.symbol === symbol) !== undefined) {
     return true;
   }
   return false;
 };
 
-const countDecimals = value => api.BigNumber(value).dp();
+const countDecimals = (value) => api.BigNumber(value).dp();
 
 // a valid Hive account is between 3 and 16 characters in length
-const isValidHiveAccountLength = account => account.length >= 3 && account.length <= 16;
+const isValidHiveAccountLength = (account) => account.length >= 3 && account.length <= 16;
 
 // helper for buy action
 const makeMapKey = (account, type) => account + '-' + type;
@@ -722,7 +722,8 @@ actions.buy = async (payload) => {
         }
 
         // add the trade to the history
-        await updateTradesHistory('buy',
+        await updateTradesHistory(
+          'buy',
           api.sender,
           'u',
           sellers,
@@ -735,7 +736,8 @@ actions.buy = async (payload) => {
           isAgentFeePaid,
           finalMarketAccount,
           agentFeeTotal,
-          soldNfts.length);
+          soldNfts.length,
+        );
 
         const ackPacket = {
           symbol,

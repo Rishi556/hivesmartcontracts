@@ -302,7 +302,7 @@ const manageRoundProposition = async () => {
     const schedules = await find('witnesses', 'schedules', { round: currentRound });
 
     // check if this witness is part of the round
-    const witnessFound = schedules.find(w => w.witness === WITNESS_ACCOUNT);
+    const witnessFound = schedules.find((w) => w.witness === WITNESS_ACCOUNT);
 
     const { witnessSignaturesRequired } = params;
 
@@ -394,7 +394,7 @@ const proposeRoundHandler = async (args, callback) => {
           while (!calculatedRoundHash && attempt <= 3) {
             if (attempt > 1) {
               console.log('null round hash, waiting for block');
-              await new Promise(r => setTimeout(r, 3000));
+              await new Promise((r) => setTimeout(r, 3000));
             }
             calculatedRoundHash = await calculateRoundHash(startblockNum, lastBlockRound);
             attempt += 1;
@@ -484,7 +484,7 @@ const init = async (conf, callback) => {
   } else {
     database = new Database();
     await database.init(databaseURL, databaseName);
-    streamNodes.forEach(node => hiveClient.nodes.push(node));
+    streamNodes.forEach((node) => hiveClient.nodes.push(node));
     hiveClient.account = process.env.ACCOUNT;
     hiveClient.sidechainId = chainId;
 

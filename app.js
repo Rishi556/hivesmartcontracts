@@ -23,7 +23,7 @@ const logger = createLogger({
       format: format.combine(
         format.colorize(),
         format.printf(
-          info => `${info.timestamp} ${info.level}: ${info.message}`,
+          (info) => `${info.timestamp} ${info.level}: ${info.message}`,
         ),
       ),
     }),
@@ -31,7 +31,7 @@ const logger = createLogger({
       filename: 'node_app.log',
       format: format.combine(
         format.printf(
-          info => `${info.timestamp} ${info.level}: ${info.message}`,
+          (info) => `${info.timestamp} ${info.level}: ${info.message}`,
         ),
       ),
     }),
@@ -108,8 +108,8 @@ const loadPlugin = (newPlugin, requestedPlugins) => {
   const plugin = {};
   plugin.name = newPlugin.PLUGIN_NAME;
   plugin.cp = fork(newPlugin.PLUGIN_PATH, [], { silent: true, detached: true });
-  plugin.cp.on('message', msg => route(msg));
-  plugin.cp.on('error', err => logger.error(`[${newPlugin.PLUGIN_NAME}] ${err}`));
+  plugin.cp.on('message', (msg) => route(msg));
+  plugin.cp.on('error', (err) => logger.error(`[${newPlugin.PLUGIN_NAME}] ${err}`));
   plugin.cp.stdout.on('data', (data) => {
     logger.info(`[${newPlugin.PLUGIN_NAME}] ${data.toString()}`);
   });
@@ -228,8 +228,10 @@ const replayBlocksLog = async () => {
   let res = await loadPlugin(blockchain);
   if (res && res.payload === null) {
     await loadPlugin(replay);
-    res = await send(getPlugin(replay),
-      { action: replay.PLUGIN_ACTIONS.REPLAY_FILE });
+    res = await send(
+      getPlugin(replay),
+      { action: replay.PLUGIN_ACTIONS.REPLAY_FILE },
+    );
     stopApp();
   }
 };

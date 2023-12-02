@@ -38,12 +38,12 @@ async function getBlock(blockNumber, tries = 1) {
       return null;
     }
     console.log(`Attempt #${tries} failed, retrying...`);
-    await new Promise(r => setTimeout(() => r(), 500));
+    await new Promise((r) => setTimeout(() => r(), 500));
     return await getBlock(blockNumber, tries + 1);
   }
 }
 
-const blockData = t => ({
+const blockData = (t) => ({
   refHiveBlockNumber: t.refHiveBlockNumber,
   transactionId: t.transactionId,
   sender: t.sender,
@@ -108,7 +108,7 @@ async function findDivergentBlock() {
   if (headOnly) {
     let retries = 0;
     while (!mainBlock && retries < 10) {
-      await new Promise(r => setTimeout(r, 1000)); // sleep 1 second
+      await new Promise((r) => setTimeout(r, 1000)); // sleep 1 second
       mainBlock = await getBlock(block._id);
       retries += 1;
     }

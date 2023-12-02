@@ -12,7 +12,6 @@ const PLUGIN_PATH = require.resolve(__filename);
 const ipc = new IPC(PLUGIN_NAME);
 let hiveClient = null;
 
-
 let currentHiveBlock = 0;
 let currentBlock = 0;
 let filePath = '';
@@ -31,7 +30,6 @@ function sendBlock(block) {
     { to: BC_PLUGIN_NAME, action: BC_PLUGIN_ACTIONS.PRODUCE_NEW_BLOCK_SYNC, payload: block },
   );
 }
-
 
 function replayFile(callback) {
   let lr;

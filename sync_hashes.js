@@ -23,7 +23,6 @@ const axios = require('axios');
 const conf = require('./config');
 const { Database } = require('./libs/Database');
 
-
 let id = 1;
 
 async function latestBlock() {
@@ -41,7 +40,7 @@ async function latestBlock() {
 const contractNames = ['tokens', 'claimdrops', 'distribution', 'nftmarket', 'mining', 'packmanager', 'nft', 'airdrops', 'inflation', 'marketmaker', 'botcontroller', 'market', 'crittermanager', 'hivepegged'];
 
 async function fetchContractHashes() {
-  const tables = await Promise.all(contractNames.map(contractName => (async () => {
+  const tables = await Promise.all(contractNames.map((contractName) => (async () => {
     id += 1;
     const contract = (await axios({
       url: 'https://api.hive-engine.com/rpc/contracts',

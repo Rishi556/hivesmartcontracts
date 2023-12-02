@@ -37,19 +37,19 @@ actions.createSSC = async () => {
       const resetAccounts = await api.db.find('accounts', {});
       for (let i = 0; i < resetAccounts.length; i += 1) {
         const acct = resetAccounts[i];
-        acct.weights = acct.weights.filter(ele => voteTokens.has(ele.symbol));
+        acct.weights = acct.weights.filter((ele) => voteTokens.has(ele.symbol));
         await api.db.update('accounts', acct);
       }
       const resetProposals = await api.db.find('proposals', {});
       for (let i = 0; i < resetProposals.length; i += 1) {
         const prop = resetProposals[i];
-        const propFund = dtfs.find(x => x.id === prop.fundId);
+        const propFund = dtfs.find((x) => x.id === prop.fundId);
         const propApprovals = await api.db.find('approvals', { to: prop._id });
         let newApprovalWeight = api.BigNumber('0');
         for (let j = 0; j < propApprovals.length; j += 1) {
           const approval = propApprovals[j];
-          const approvalAcct = resetAccounts.find(x => x.account === approval.from);
-          const approvalAcctWgt = approvalAcct.weights.find(x => x.symbol === propFund.voteToken);
+          const approvalAcct = resetAccounts.find((x) => x.account === approval.from);
+          const approvalAcctWgt = approvalAcct.weights.find((x) => x.symbol === propFund.voteToken);
           newApprovalWeight = newApprovalWeight.plus(approvalAcctWgt.weight);
         }
         prop.approvalWeight = { $numberDecimal: newApprovalWeight };
@@ -437,11 +437,13 @@ actions.approveProposal = async (payload) => {
       }
 
       let activeApprovals = 0;
-      const approvals = await api.db.find('approvals',
+      const approvals = await api.db.find(
+        'approvals',
         { from: api.sender, proposalPending: true },
         params.maxAccountApprovals,
         0,
-        [{ index: '_id', descending: true }]);
+        [{ index: '_id', descending: true }],
+      );
       for (let index = 0; index < approvals.length; index += 1) {
         const approval = approvals[index];
         const approvalProposal = await api.db.findOne('proposals', { _id: approval.to });
@@ -473,7 +475,7 @@ actions.approveProposal = async (payload) => {
             .plus(balance.delegationsIn)
             .toFixed(voteTokenObj.precision, api.BigNumber.ROUND_HALF_UP);
         }
-        const wIndex = acct.weights.findIndex(x => x.symbol === dtf.voteToken);
+        const wIndex = acct.weights.findIndex((x) => x.symbol === dtf.voteToken);
         if (wIndex !== -1) {
           acct.weights[wIndex].weight = approvalWeight;
         } else {
@@ -519,7 +521,7 @@ actions.disapproveProposal = async (payload) => {
             .plus(balance.delegationsIn)
             .toFixed(voteTokenObj.precision, api.BigNumber.ROUND_HALF_UP);
         }
-        const wIndex = acct.weights.findIndex(x => x.symbol === dtf.voteToken);
+        const wIndex = acct.weights.findIndex((x) => x.symbol === dtf.voteToken);
         if (wIndex !== -1) {
           acct.weights[wIndex].weight = approvalWeight;
         } else {
@@ -544,7 +546,7 @@ actions.updateProposalApprovals = async (payload) => {
     const params = await api.db.findOne('params', {});
 
     // only update existing weights
-    const wIndex = acct.weights.findIndex(x => x.symbol === token.symbol);
+    const wIndex = acct.weights.findIndex((x) => x.symbol === token.symbol);
     if (wIndex !== -1) {
       // calculate approval weight of the account
       const balance = await api.db.findOneInTable('tokens', 'balances', { account, symbol: token.symbol });
@@ -569,11 +571,13 @@ actions.updateProposalApprovals = async (payload) => {
 
       if (!api.BigNumber(deltaApprovalWeight).eq(0)) {
         await api.db.update('accounts', acct);
-        const approvals = await api.db.find('approvals',
+        const approvals = await api.db.find(
+          'approvals',
           { from: account, proposalPending: true },
           params.maxAccountApprovals,
           0,
-          [{ index: '_id', descending: true }]);
+          [{ index: '_id', descending: true }],
+        );
         for (let index = 0; index < approvals.length; index += 1) {
           const approval = approvals[index];
           const proposalPending = await updateProposalWeight(approval.to, deltaApprovalWeight, token);
@@ -598,7 +602,8 @@ async function checkPendingProposals(dtf, params) {
   let proposals;
   let runningPay = api.BigNumber(dtf.maxAmountPerDay).times(tickPayRatio);
   while (runningPay.gt(0)) {
-    proposals = await api.db.find('proposals',
+    proposals = await api.db.find(
+      'proposals',
       {
         fundId: dtf.id,
         active: true,
@@ -608,7 +613,8 @@ async function checkPendingProposals(dtf, params) {
       },
       params.processQueryLimit,
       offset,
-      [{ index: 'byApprovalWeight', descending: true }, { index: '_id', descending: false }]);
+      [{ index: 'byApprovalWeight', descending: true }, { index: '_id', descending: false }],
+    );
 
     for (let i = 0; i < proposals.length; i += 1) {
       if (api.BigNumber(proposals[i].amountPerDay).times(tickPayRatio).gte(runningPay)) {
@@ -632,13 +638,22 @@ async function checkPendingProposals(dtf, params) {
     const fund = funded[i];
     fundedLog.push({ id: fund._id, tickPay: fund.tickPay });
     if (fund.payout.type === 'user') {
-      await api.executeSmartContract('tokens', 'issue',
-        { to: fund.payout.name, symbol: payTokenObj.symbol, quantity: fund.tickPay });
+      await api.executeSmartContract(
+        'tokens',
+        'issue',
+        { to: fund.payout.name, symbol: payTokenObj.symbol, quantity: fund.tickPay },
+      );
     } else if (fund.payout.type === 'contract') {
-      await api.executeSmartContract('tokens', 'issueToContract',
-        { to: fund.payout.name, symbol: payTokenObj.symbol, quantity: fund.tickPay });
-      await api.executeSmartContract(fund.payout.name, 'receiveDtfTokens',
-        { data: fund.payout.contractPayload, symbol: payTokenObj.symbol, quantity: fund.tickPay });
+      await api.executeSmartContract(
+        'tokens',
+        'issueToContract',
+        { to: fund.payout.name, symbol: payTokenObj.symbol, quantity: fund.tickPay },
+      );
+      await api.executeSmartContract(
+        fund.payout.name,
+        'receiveDtfTokens',
+        { data: fund.payout.contractPayload, symbol: payTokenObj.symbol, quantity: fund.tickPay },
+      );
     }
   }
   // eslint-disable-next-line no-param-reassign
@@ -653,7 +668,8 @@ actions.checkPendingDtfs = async () => {
     const blockDate = new Date(`${api.hiveBlockTimestamp}.000Z`);
     const tickTime = api.BigNumber(blockDate.getTime()).minus(params.dtfTickHours * 3600 * 1000).toNumber();
 
-    const pendingDtfs = await api.db.find('funds',
+    const pendingDtfs = await api.db.find(
+      'funds',
       {
         active: true,
         lastTickTime: {
@@ -662,7 +678,8 @@ actions.checkPendingDtfs = async () => {
       },
       params.maxDtfsPerBlock,
       0,
-      [{ index: 'lastTickTime', descending: false }, { index: '_id', descending: false }]);
+      [{ index: 'lastTickTime', descending: false }, { index: '_id', descending: false }],
+    );
 
     for (let i = 0; i < pendingDtfs.length; i += 1) {
       await checkPendingProposals(pendingDtfs[i], params);

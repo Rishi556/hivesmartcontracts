@@ -53,7 +53,7 @@ const hasValidPrecision = (value, precision) => (api.BigNumber(value).dp() <= pr
 
 const transferIsSuccessful = (result, action, from, to, symbol, quantity) => {
   if (result.errors === undefined
-    && result.events && result.events.find(el => el.contract === 'tokens'
+    && result.events && result.events.find((el) => el.contract === 'tokens'
     && el.event === action
     && el.data.from === from
     && el.data.to === to
@@ -130,7 +130,8 @@ const removeExpiredClaimdrops = async () => {
   const timestamp = blockDate.getTime();
 
   let expired = await api.db.find(
-    'claimdrops', {
+    'claimdrops',
+    {
       expiry: {
         $lte: timestamp,
       },
@@ -148,7 +149,8 @@ const removeExpiredClaimdrops = async () => {
     }
 
     expired = await api.db.find(
-      'claimdrops', {
+      'claimdrops',
+      {
         expiry: {
           $lte: timestamp,
         },
@@ -305,7 +307,7 @@ actions.claim = async (payload) => {
         if (!api.assert(api.BigNumber(price).gt(0), 'quantity too low')) return;
         const hivePeggedToken = await api.db.findOneInTable('tokens', 'balances', { account: api.sender, symbol: HIVE_PEGGED_SYMBOL });
 
-        const previousClaimIndex = claimdrop.claims.findIndex(el => el.account === api.sender);
+        const previousClaimIndex = claimdrop.claims.findIndex((el) => el.account === api.sender);
         const previousClaim = claimdrop.claims[previousClaimIndex];
         const claim = (previousClaim) ? {
           account: previousClaim.account,
@@ -318,7 +320,7 @@ actions.claim = async (payload) => {
         // get limit for api.sender from list or global limit
         let limit;
         if (claimdrop.list) {
-          const accountInList = claimdrop.list.find(el => el.account === claim.account);
+          const accountInList = claimdrop.list.find((el) => el.account === claim.account);
           // assert if list exist but account is not in it
           if (!api.assert(accountInList, 'you are not eligible')) return;
           ({ limit } = accountInList);
@@ -334,8 +336,14 @@ actions.claim = async (payload) => {
             to: claimdrop.owner, symbol: HIVE_PEGGED_SYMBOL, quantity: price,
           });
 
-          if (transferIsSuccessful(transfer,
-            transferType, api.sender, claimdrop.owner, HIVE_PEGGED_SYMBOL, price)) {
+          if (transferIsSuccessful(
+            transfer,
+            transferType,
+            api.sender,
+            claimdrop.owner,
+            HIVE_PEGGED_SYMBOL,
+            price,
+          )) {
             // transfer tokens to claimant
             await api.transferTokens(api.sender, claimdrop.symbol, quantity, 'user');
 

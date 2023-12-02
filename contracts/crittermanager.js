@@ -42,7 +42,7 @@ actions.createSSC = async () => {
 // helper function to check that token transfers succeeded
 const isTokenTransferVerified = (result, from, to, symbol, quantity, eventStr) => {
   if (result.errors === undefined
-    && result.events && result.events.find(el => el.contract === 'tokens' && el.event === eventStr
+    && result.events && result.events.find((el) => el.contract === 'tokens' && el.event === eventStr
     && el.data.from === from && el.data.to === to && el.data.quantity === quantity && el.data.symbol === symbol) !== undefined) {
     return true;
   }

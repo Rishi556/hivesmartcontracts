@@ -81,14 +81,17 @@ const updatePriceMetrics = async (symbol, price) => {
 const updateBidMetric = async (symbol) => {
   const metric = await getMetric(symbol);
 
-  const buyOrderBook = await api.db.find('buyBook',
+  const buyOrderBook = await api.db.find(
+    'buyBook',
     {
       symbol,
-    }, 1, 0,
+    },
+    1,
+    0,
     [
       { index: 'priceDec', descending: true },
-    ]);
-
+    ],
+  );
 
   if (buyOrderBook.length > 0) {
     metric.highestBid = buyOrderBook[0].price;
@@ -102,13 +105,17 @@ const updateBidMetric = async (symbol) => {
 const updateAskMetric = async (symbol) => {
   const metric = await getMetric(symbol);
 
-  const sellOrderBook = await api.db.find('sellBook',
+  const sellOrderBook = await api.db.find(
+    'sellBook',
     {
       symbol,
-    }, 1, 0,
+    },
+    1,
+    0,
     [
       { index: 'priceDec', descending: false },
-    ]);
+    ],
+  );
 
   if (sellOrderBook.length > 0) {
     metric.lowestAsk = sellOrderBook[0].price;
@@ -169,7 +176,7 @@ const updateTradesHistory = async (type, buyer, seller, symbol, quantity, price,
   await updatePriceMetrics(symbol, price);
 };
 
-const countDecimals = value => api.BigNumber(value).dp();
+const countDecimals = (value) => api.BigNumber(value).dp();
 
 const removeExpiredOrders = async (table) => {
   const timestampSec = api.BigNumber(new Date(`${api.hiveBlockTimestamp}.000Z`).getTime())
@@ -243,7 +250,7 @@ actions.createSSC = async () => {
     await api.db.createTable('metrics', ['symbol']);
   } else {
     // remove stuck 0 quantity orders
-    let order = await api.db.findOne('buyBook', { txId: '1a83fe18932074d28ffa63311892f9f05b0195ad' });
+    const order = await api.db.findOne('buyBook', { txId: '1a83fe18932074d28ffa63311892f9f05b0195ad' });
     if (order) {
       await api.db.remove('buyBook', order);
       await updateBidMetric(order.symbol);
@@ -312,16 +319,21 @@ const findMatchingSellOrders = async (order, tokenPrecision) => {
   await removeExpiredOrders('sellBook');
 
   // get the orders that match the symbol and the price
-  let sellOrderBook = await api.db.find('sellBook', {
-    symbol,
-    priceDec: {
-      $lte: priceDec,
+  let sellOrderBook = await api.db.find(
+    'sellBook',
+    {
+      symbol,
+      priceDec: {
+        $lte: priceDec,
+      },
     },
-  }, 1000, offset,
-  [
-    { index: 'priceDec', descending: false },
-    { index: '_id', descending: false },
-  ]);
+    1000,
+    offset,
+    [
+      { index: 'priceDec', descending: false },
+      { index: '_id', descending: false },
+    ],
+  );
 
   do {
     const nbOrders = sellOrderBook.length;
@@ -479,16 +491,21 @@ const findMatchingSellOrders = async (order, tokenPrecision) => {
 
     if (api.BigNumber(buyOrder.quantity).gt(0)) {
       // get the orders that match the symbol and the price
-      sellOrderBook = await api.db.find('sellBook', {
-        symbol,
-        priceDec: {
-          $lte: priceDec,
+      sellOrderBook = await api.db.find(
+        'sellBook',
+        {
+          symbol,
+          priceDec: {
+            $lte: priceDec,
+          },
         },
-      }, 1000, offset,
-      [
-        { index: 'priceDec', descending: false },
-        { index: '_id', descending: false },
-      ]);
+        1000,
+        offset,
+        [
+          { index: 'priceDec', descending: false },
+          { index: '_id', descending: false },
+        ],
+      );
     }
   } while (sellOrderBook.length > 0 && api.BigNumber(buyOrder.quantity).gt(0));
 
@@ -517,16 +534,21 @@ const findMatchingBuyOrders = async (order, tokenPrecision) => {
   await removeExpiredOrders('buyBook');
 
   // get the orders that match the symbol and the price
-  let buyOrderBook = await api.db.find('buyBook', {
-    symbol,
-    priceDec: {
-      $gte: priceDec,
+  let buyOrderBook = await api.db.find(
+    'buyBook',
+    {
+      symbol,
+      priceDec: {
+        $gte: priceDec,
+      },
     },
-  }, 1000, offset,
-  [
-    { index: 'priceDec', descending: true },
-    { index: '_id', descending: false },
-  ]);
+    1000,
+    offset,
+    [
+      { index: 'priceDec', descending: true },
+      { index: '_id', descending: false },
+    ],
+  );
 
   do {
     const nbOrders = buyOrderBook.length;
@@ -685,16 +707,21 @@ const findMatchingBuyOrders = async (order, tokenPrecision) => {
 
     if (api.BigNumber(sellOrder.quantity).gt(0)) {
       // get the orders that match the symbol and the price
-      buyOrderBook = await api.db.find('buyBook', {
-        symbol,
-        priceDec: {
-          $gte: priceDec,
+      buyOrderBook = await api.db.find(
+        'buyBook',
+        {
+          symbol,
+          priceDec: {
+            $gte: priceDec,
+          },
         },
-      }, 1000, offset,
-      [
-        { index: 'priceDec', descending: true },
-        { index: '_id', descending: false },
-      ]);
+        1000,
+        offset,
+        [
+          { index: 'priceDec', descending: true },
+          { index: '_id', descending: false },
+        ],
+      );
     }
   } while (buyOrderBook.length > 0 && api.BigNumber(sellOrder.quantity).gt(0));
 
@@ -751,7 +778,7 @@ actions.buy = async (payload) => {
         const res = await api.executeSmartContract('tokens', 'transferToContract', { from: finalAccount, symbol: HIVE_PEGGED_SYMBOL, quantity: nbTokensToLock, to: CONTRACT_NAME });
 
         if (res.errors === undefined
-          && res.events && res.events.find(el => el.contract === 'tokens' && el.event === 'transferToContract' && el.data.from === finalAccount && el.data.to === CONTRACT_NAME && el.data.quantity === nbTokensToLock && el.data.symbol === HIVE_PEGGED_SYMBOL) !== undefined) {
+          && res.events && res.events.find((el) => el.contract === 'tokens' && el.event === 'transferToContract' && el.data.from === finalAccount && el.data.to === CONTRACT_NAME && el.data.quantity === nbTokensToLock && el.data.symbol === HIVE_PEGGED_SYMBOL) !== undefined) {
           const timestampSec = api.BigNumber(new Date(`${api.hiveBlockTimestamp}.000Z`).getTime())
             .dividedBy(1000)
             .toNumber();
@@ -819,7 +846,7 @@ actions.sell = async (payload) => {
         const res = await api.executeSmartContract('tokens', 'transferToContract', { from: finalAccount, symbol, quantity, to: CONTRACT_NAME });
 
         if (res.errors === undefined
-          && res.events && res.events.find(el => el.contract === 'tokens' && el.event === 'transferToContract' && el.data.from === finalAccount && el.data.to === CONTRACT_NAME && el.data.quantity === quantity && el.data.symbol === symbol) !== undefined) {
+          && res.events && res.events.find((el) => el.contract === 'tokens' && el.event === 'transferToContract' && el.data.from === finalAccount && el.data.to === CONTRACT_NAME && el.data.quantity === quantity && el.data.symbol === symbol) !== undefined) {
           const timestampSec = api.BigNumber(new Date(`${api.hiveBlockTimestamp}.000Z`).getTime())
             .dividedBy(1000)
             .toNumber();
@@ -871,7 +898,7 @@ actions.marketBuy = async (payload) => {
       const result = await api.executeSmartContract('tokens', 'transferToContract', { from: finalAccount, symbol: HIVE_PEGGED_SYMBOL, quantity, to: CONTRACT_NAME });
 
       if (result.errors === undefined
-        && result.events && result.events.find(el => el.contract === 'tokens' && el.event === 'transferToContract' && el.data.from === finalAccount && el.data.to === CONTRACT_NAME && el.data.quantity === quantity && el.data.symbol === HIVE_PEGGED_SYMBOL) !== undefined) {
+        && result.events && result.events.find((el) => el.contract === 'tokens' && el.event === 'transferToContract' && el.data.from === finalAccount && el.data.to === CONTRACT_NAME && el.data.quantity === quantity && el.data.symbol === HIVE_PEGGED_SYMBOL) !== undefined) {
         let hiveRemaining = quantity;
         let offset = 0;
         let volumeTraded = 0;
@@ -879,13 +906,18 @@ actions.marketBuy = async (payload) => {
         await removeExpiredOrders('sellBook');
 
         // get the orders that match the symbol and the price
-        let sellOrderBook = await api.db.find('sellBook', {
-          symbol,
-        }, 1000, offset,
-        [
-          { index: 'priceDec', descending: false },
-          { index: '_id', descending: false },
-        ]);
+        let sellOrderBook = await api.db.find(
+          'sellBook',
+          {
+            symbol,
+          },
+          1000,
+          offset,
+          [
+            { index: 'priceDec', descending: false },
+            { index: '_id', descending: false },
+          ],
+        );
 
         do {
           const nbOrders = sellOrderBook.length;
@@ -1009,13 +1041,18 @@ actions.marketBuy = async (payload) => {
 
           if (api.BigNumber(hiveRemaining).gt(0)) {
             // get the orders that match the symbol and the price
-            sellOrderBook = await api.db.find('sellBook', {
-              symbol,
-            }, 1000, offset,
-            [
-              { index: 'priceDec', descending: false },
-              { index: '_id', descending: false },
-            ]);
+            sellOrderBook = await api.db.find(
+              'sellBook',
+              {
+                symbol,
+              },
+              1000,
+              offset,
+              [
+                { index: 'priceDec', descending: false },
+                { index: '_id', descending: false },
+              ],
+            );
           }
         } while (sellOrderBook.length > 0 && api.BigNumber(hiveRemaining).gt(0));
 
@@ -1057,7 +1094,7 @@ actions.marketSell = async (payload) => {
       const result = await api.executeSmartContract('tokens', 'transferToContract', { from: finalAccount, symbol, quantity, to: CONTRACT_NAME });
 
       if (result.errors === undefined
-        && result.events && result.events.find(el => el.contract === 'tokens' && el.event === 'transferToContract' && el.data.from === finalAccount && el.data.to === CONTRACT_NAME && el.data.quantity === quantity && el.data.symbol === symbol) !== undefined) {
+        && result.events && result.events.find((el) => el.contract === 'tokens' && el.event === 'transferToContract' && el.data.from === finalAccount && el.data.to === CONTRACT_NAME && el.data.quantity === quantity && el.data.symbol === symbol) !== undefined) {
         let tokensRemaining = quantity;
         let offset = 0;
         let volumeTraded = 0;
@@ -1065,13 +1102,18 @@ actions.marketSell = async (payload) => {
         await removeExpiredOrders('buyBook');
 
         // get the orders that match the symbol
-        let buyOrderBook = await api.db.find('buyBook', {
-          symbol,
-        }, 1000, offset,
-        [
-          { index: 'priceDec', descending: true },
-          { index: '_id', descending: false },
-        ]);
+        let buyOrderBook = await api.db.find(
+          'buyBook',
+          {
+            symbol,
+          },
+          1000,
+          offset,
+          [
+            { index: 'priceDec', descending: true },
+            { index: '_id', descending: false },
+          ],
+        );
 
         do {
           const nbOrders = buyOrderBook.length;
@@ -1213,13 +1255,18 @@ actions.marketSell = async (payload) => {
 
           if (api.BigNumber(tokensRemaining).gt(0)) {
             // get the orders that match the symbol and the price
-            buyOrderBook = await api.db.find('buyBook', {
-              symbol,
-            }, 1000, offset,
-            [
-              { index: 'priceDec', descending: true },
-              { index: '_id', descending: false },
-            ]);
+            buyOrderBook = await api.db.find(
+              'buyBook',
+              {
+                symbol,
+              },
+              1000,
+              offset,
+              [
+                { index: 'priceDec', descending: true },
+                { index: '_id', descending: false },
+              ],
+            );
           }
         } while (buyOrderBook.length > 0 && api.BigNumber(tokensRemaining).gt(0));
 

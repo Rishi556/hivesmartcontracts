@@ -51,9 +51,7 @@ function getRefBlockNumber(block) {
 }
 
 // produce all the pending transactions, that will result in the creation of a block
-async function producePendingTransactions(
-  refHiveBlockNumber, refHiveBlockId, prevRefHiveBlockId, transactions, timestamp,
-) {
+async function producePendingTransactions(refHiveBlockNumber, refHiveBlockId, prevRefHiveBlockId, transactions, timestamp) {
   const previousBlock = await getLatestBlockMetadata();
   if (previousBlock) {
     // skip block if it has been parsed already
@@ -141,9 +139,7 @@ const produceNewBlockSync = async (block, callback = null) => {
   // if there are transactions pending we produce a block
   if (newTransactions.length > 0
      || (virtualTransactions && virtualTransactions.length > 0) || replay) {
-    await producePendingTransactions(
-      refHiveBlockNumber, refHiveBlockId, prevRefHiveBlockId, newTransactions, timestamp,
-    );
+    await producePendingTransactions(refHiveBlockNumber, refHiveBlockId, prevRefHiveBlockId, newTransactions, timestamp);
   }
   producing = false;
 

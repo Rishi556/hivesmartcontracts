@@ -7,7 +7,7 @@ const validator = require('validator');
 const { MongoClient } = require('mongodb');
 const { EJSON } = require('bson');
 const config = require('../config.json');
-const { CONSTANTS } = require('../libs/Constants');
+const { CONSTANTS } = require('./Constants');
 
 // Change this to turn on hash logging.
 const enableHashLogging = false;
@@ -17,15 +17,15 @@ function validateIndexName(indexName) {
     return false;
   }
   const indexNameParts = indexName.split('.');
-  return indexNameParts.every(p => p.length > 0 && validator.isAlphanumeric(p));
+  return indexNameParts.every((p) => p.length > 0 && validator.isAlphanumeric(p));
 }
 
 function validateIndexSpec(spec) {
   if (typeof spec === 'string') return validateIndexName(spec);
   if (typeof spec === 'object') {
     return spec.name && validator.isAlphanumeric(spec.name) && typeof spec.index === 'object'
-          && Object.keys(spec.index).every(indexName => validateIndexName(indexName))
-          && Object.values(spec.index).every(asc => asc === 1 || asc === -1);
+          && Object.keys(spec.index).every((indexName) => validateIndexName(indexName))
+          && Object.values(spec.index).every((asc) => asc === 1 || asc === -1);
   }
   return false;
 }
@@ -61,7 +61,6 @@ function adjustQueryForPrimaryKey(query, customPrimaryKey) {
     query._id = primaryKeyQuery; // eslint-disable-line no-underscore-dangle, no-param-reassign
   }
 }
-
 
 class Database {
   constructor() {
@@ -99,9 +98,7 @@ class Database {
   async getNextSequence(name) {
     const sequences = this.database.collection('sequences');
 
-    const sequence = await sequences.findOneAndUpdate(
-      { _id: name }, { $inc: { seq: 1 } }, { new: true, session: this.session },
-    );
+    const sequence = await sequences.findOneAndUpdate({ _id: name }, { $inc: { seq: 1 } }, { new: true, session: this.session });
 
     return sequence.value.seq;
   }
@@ -234,7 +231,7 @@ class Database {
       const block = await this.getBlockInfo(blockNumber);
 
       if (block) {
-        result = Object.assign({}, { blockNumber }, block.transactions[index]);
+        result = { blockNumber, ...block.transactions[index] };
       }
     }
 
@@ -356,7 +353,8 @@ class Database {
 
         await this.chain.updateOne(
           { _id: block._id }, // eslint-disable-line no-underscore-dangle
-          { $set: block }, { session: this.session },
+          { $set: block },
+          { session: this.session },
         );
       } else {
         // eslint-disable-next-line no-console
@@ -488,10 +486,10 @@ class Database {
     if (validator.isAlphanumeric(tableName)
       && Array.isArray(indexes)
       && (indexes.length === 0
-        || (indexes.length > 0 && indexes.every(el => validateIndexSpec(el))))
+        || (indexes.length > 0 && indexes.every((el) => validateIndexSpec(el))))
       && (!params.primaryKey
         || (Array.isArray(params.primaryKey) && params.primaryKey.length > 0
-            && params.primaryKey.every(el => validator.isAlphanumeric(el))))) {
+            && params.primaryKey.every((el) => validator.isAlphanumeric(el))))) {
       const finalTableName = `${contractName}_${tableName}`;
       // get the table from the database
       let table = await this.getContractCollection(contractName, finalTableName);
@@ -542,7 +540,7 @@ class Database {
     if (validator.isAlphanumeric(tableName)
       && Array.isArray(indexes)
       && (indexes.length === 0
-        || (indexes.length > 0 && indexes.every(el => validateIndexSpec(el))))) {
+        || (indexes.length > 0 && indexes.every((el) => validateIndexSpec(el))))) {
       const finalTableName = `${contractName}_${tableName}`;
       // get the table from the database
       const table = await this.getContractCollection(contractName, finalTableName);
@@ -624,7 +622,7 @@ class Database {
         && Array.isArray(ind)
         && (ind.length === 0
           || (ind.length > 0
-            && ind.every(el => el.index && typeof el.index === 'string'
+            && ind.every((el) => el.index && typeof el.index === 'string'
               && el.descending !== undefined && typeof el.descending === 'boolean')))
         && Number.isInteger(lim)
         && Number.isInteger(off)
@@ -648,7 +646,7 @@ class Database {
             const tableIndexes = await indexInformation(tableData);
 
             const sort = [];
-            if (ind.every(el => tableIndexes[`${el.index}_1`] !== undefined || el.index === '$loki' || el.index === '_id' || tableIndexes[el.index] !== undefined)) {
+            if (ind.every((el) => tableIndexes[`${el.index}_1`] !== undefined || el.index === '$loki' || el.index === '_id' || tableIndexes[el.index] !== undefined)) {
               ind.forEach((el) => {
                 if (tableIndexes[el.index] !== undefined) {
                   tableIndexes[el.index].forEach((indexPart) => {
@@ -670,7 +668,7 @@ class Database {
               // not exist.
               log.info(`Index ${JSON.stringify(ind)} not available for ${finalTableName}`); // eslint-disable-line no-console
             }
-            if (sort.findIndex(el => el[0] === '_id') < 0) {
+            if (sort.findIndex((el) => el[0] === '_id') < 0) {
               sort.push(['_id', 'asc']);
             }
             result = await tableData.find(EJSON.deserialize(query), {
@@ -917,7 +915,7 @@ class Database {
     if (contractInDb && contractInDb.tables[finalTableName] !== undefined) {
       const tableInDb = this.database.collection(finalTableName);
       if (tableInDb) {
-        tableDetails = Object.assign({}, contractInDb.tables[finalTableName]);
+        tableDetails = { ...contractInDb.tables[finalTableName] };
         tableDetails.indexes = await tableInDb.indexInformation();
       }
     }
@@ -977,7 +975,7 @@ class Database {
         records = await tableInDb.find(EJSON.deserialize(query), {
           limit: lim,
           skip: off,
-          sort: ind.map(el => [el.index === '$loki' ? '_id' : el.index, el.descending === true ? 'desc' : 'asc']),
+          sort: ind.map((el) => [el.index === '$loki' ? '_id' : el.index, el.descending === true ? 'desc' : 'asc']),
           session: this.session,
         });
         records = EJSON.serialize(records);
@@ -1048,7 +1046,8 @@ class Database {
     await this.updateTableHash(table.split('_')[0], table.split('_')[1]);
     await tableInDb.updateOne(
       { _id: record._id }, // eslint-disable-line no-underscore-dangle
-      { $set: EJSON.deserialize(record) }, { session: this.session },
+      { $set: EJSON.deserialize(record) },
+      { session: this.session },
     );
   }
 

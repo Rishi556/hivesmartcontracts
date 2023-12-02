@@ -76,7 +76,7 @@ const isValidPartition = (partition) => {
 
 const isTokenTransferVerified = (result, from, to, symbol, quantity, eventStr) => {
   if (result.errors === undefined
-    && result.events && result.events.find(el => el.contract === 'tokens' && el.event === eventStr
+    && result.events && result.events.find((el) => el.contract === 'tokens' && el.event === eventStr
     && el.data.from === from && el.data.to === to && el.data.quantity === quantity && el.data.symbol === symbol) !== undefined) {
     return true;
   }
@@ -86,7 +86,7 @@ const isTokenTransferVerified = (result, from, to, symbol, quantity, eventStr) =
 const countNftIssuance = (result, from, to, symbol) => {
   let count = 0;
   if (result.errors === undefined && result.events) {
-    const issuanceEvents = result.events.filter(e => e.contract === 'nft' && e.event === 'issue'
+    const issuanceEvents = result.events.filter((e) => e.contract === 'nft' && e.event === 'issue'
       && e.data.from === from && e.data.to === to && e.data.symbol === symbol);
     count = issuanceEvents.length;
   }
@@ -97,7 +97,7 @@ const calculateBalance = (balance, quantity, precision, add) => (add
   ? api.BigNumber(balance).plus(quantity).toFixed(precision)
   : api.BigNumber(balance).minus(quantity).toFixed(precision));
 
-const countDecimals = value => api.BigNumber(value).dp();
+const countDecimals = (value) => api.BigNumber(value).dp();
 
 const verifyTokenBalance = async (amount, symbol, account) => {
   if (api.BigNumber(amount).lte(0)) {
@@ -838,7 +838,7 @@ const generateRandomInstance = (settings, nftSymbol, to, types) => {
     const rarity = doRandomRoll(settings.rarityChance);
     const team = doRandomRoll(settings.teamChance);
 
-    candidateTypes = types.filter(t => t.category === category && t.rarity === rarity && t.team === team);
+    candidateTypes = types.filter((t) => t.category === category && t.rarity === rarity && t.team === team);
     rollCount += 1;
   }
   const type = candidateTypes.length > 0 ? candidateTypes[Math.floor(api.random() * candidateTypes.length)].typeId : 0;

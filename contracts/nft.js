@@ -110,7 +110,7 @@ actions.updateParams = async (payload) => {
 // check that token transfers succeeded
 const isTokenTransferVerified = (result, from, to, symbol, quantity, eventStr) => {
   if (result.errors === undefined
-    && result.events && result.events.find(el => el.contract === 'tokens' && el.event === eventStr
+    && result.events && result.events.find((el) => el.contract === 'tokens' && el.event === eventStr
       && el.data.from === from && el.data.to === to && el.data.quantity === quantity && el.data.symbol === symbol) !== undefined) {
     return true;
   }
@@ -121,16 +121,16 @@ const calculateBalance = (balance, quantity, precision, add) => (add
   ? api.BigNumber(balance).plus(quantity).toFixed(precision)
   : api.BigNumber(balance).minus(quantity).toFixed(precision));
 
-const countDecimals = value => api.BigNumber(value).dp();
+const countDecimals = (value) => api.BigNumber(value).dp();
 
 // check if duplicate elements in array
-const containsDuplicates = arr => new Set(arr).size !== arr.length;
+const containsDuplicates = (arr) => new Set(arr).size !== arr.length;
 
 // a valid Hive account is between 3 and 16 characters in length
-const isValidHiveAccountLength = account => account.length >= 3 && account.length <= 16;
+const isValidHiveAccountLength = (account) => account.length >= 3 && account.length <= 16;
 
 // a valid contract name is between 3 and 50 characters in length
-const isValidContractLength = contract => contract.length >= 3 && contract.length <= 50;
+const isValidContractLength = (contract) => contract.length >= 3 && contract.length <= 50;
 
 const isValidAccountsArray = (arr) => {
   let validContents = true;
@@ -844,10 +844,10 @@ actions.setPropertyPermissions = async (payload) => {
         let sanitizedContractList = [];
 
         if (accounts) {
-          sanitizedAccountList = accounts.map(account => account.trim().toLowerCase());
+          sanitizedAccountList = accounts.map((account) => account.trim().toLowerCase());
         }
         if (contracts) {
-          sanitizedContractList = contracts.map(contract => contract.trim());
+          sanitizedContractList = contracts.map((contract) => contract.trim());
         }
 
         if (api.assert(accounts === undefined || !containsDuplicates(sanitizedAccountList), 'cannot add the same account twice')
@@ -1498,8 +1498,10 @@ actions.issue = async (payload) => {
           // sanity checks on any tokens the issuer wants to lock up in this NFT
           if (lockTokens) {
             const isLockValid = await isValidTokenBasket(lockTokens, balanceTableName, finalFrom, feeSymbol, issuanceFee);
-            if (!api.assert(isLockValid,
-              `invalid basket of tokens to lock (cannot lock more than ${MAX_NUM_LOCKED_TOKEN_TYPES} token types; issuing account must have enough balance)`)) {
+            if (!api.assert(
+              isLockValid,
+              `invalid basket of tokens to lock (cannot lock more than ${MAX_NUM_LOCKED_TOKEN_TYPES} token types; issuing account must have enough balance)`,
+            )) {
               return false;
             }
           }

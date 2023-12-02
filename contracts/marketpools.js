@@ -224,7 +224,7 @@ actions.createRewardPool = async (payload) => {
       externalMiners: tokenPair,
     });
     if (res.errors === undefined
-      && res.events && res.events.find(el => el.contract === 'mining' && el.event === 'createPool') !== undefined) {
+      && res.events && res.events.find((el) => el.contract === 'mining' && el.event === 'createPool') !== undefined) {
       await api.executeSmartContract('mining', 'setActive', { id: rewardPoolId, active: true });
       api.emit('createRewardPool', { tokenPair, rewardPoolId });
     }
@@ -262,7 +262,7 @@ actions.updateRewardPool = async (payload) => {
       lotteryAmount,
     });
     if (res.errors === undefined
-      && res.events && res.events.find(el => el.contract === 'mining' && el.event === 'updatePool') !== undefined) {
+      && res.events && res.events.find((el) => el.contract === 'mining' && el.event === 'updatePool') !== undefined) {
       api.emit('updateRewardPool', { tokenPair, rewardPoolId });
     }
   }
@@ -543,7 +543,7 @@ actions.swapTokens = async (payload) => {
 
   const res = await api.executeSmartContract('tokens', 'transferToContract', { symbol: symbolIn, quantity: tokenQuantity.in.toFixed(), to: 'marketpools' });
   if (res.errors === undefined
-    && res.events && res.events.find(el => el.contract === 'tokens' && el.event === 'transferToContract' && el.data.from === api.sender && el.data.to === 'marketpools' && el.data.quantity === tokenQuantity.in.toFixed()) !== undefined) {
+    && res.events && res.events.find((el) => el.contract === 'tokens' && el.event === 'transferToContract' && el.data.from === api.sender && el.data.to === 'marketpools' && el.data.quantity === tokenQuantity.in.toFixed()) !== undefined) {
     await api.transferTokens(api.sender, symbolOut, tokenQuantity.out.toFixed(), 'user');
     await updatePoolStats(pool, tokenPairDelta[0], tokenPairDelta[1], false, true);
     api.emit('swapTokens', { symbolIn, symbolOut, fee: tokenPairFee });

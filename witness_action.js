@@ -96,10 +96,10 @@ function broadcastWitnessAction(contractAction, contractPayload) {
 program.version(packagejson.version);
 program
   .command('approve <witness>')
-  .action(witness => broadcastWitnessAction('approve', { witness }));
+  .action((witness) => broadcastWitnessAction('approve', { witness }));
 program
   .command('disapprove <witness>')
-  .action(witness => broadcastWitnessAction('disapprove', { witness }));
+  .action((witness) => broadcastWitnessAction('disapprove', { witness }));
 
 program
   .command('register')
@@ -114,7 +114,7 @@ program
       // eslint-disable-next-line no-console
       console.log('Both domain and IP specified in your .env file, please only use one');
       return;
-    } else if (ip) {
+    } if (ip) {
       registerJSON.IP = ip;
     } else if (domain) {
       registerJSON.domain = domain;
@@ -128,7 +128,6 @@ program
         if (code !== 0) {
           // eslint-disable-next-line no-console
           console.log(`A divergent block was found, not registering. Run node find_divergent_block.js -n ${engineNode} to learn where.`);
-          return;
         } else {
           broadcastWitnessAction('register', registerJSON);
         }
@@ -151,7 +150,7 @@ program
       // eslint-disable-next-line no-console
       console.log('Both domain and IP specified in your .env file, please only use one');
       return;
-    } else if (ip) {
+    } if (ip) {
       registerJSON.IP = ip;
     } else if (domain) {
       registerJSON.domain = domain;

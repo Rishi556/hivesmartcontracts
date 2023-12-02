@@ -7,7 +7,7 @@ class TableAsserts {
     this.fixture = fixture;
   }
 
-  static assertError(tx, message, index=0) {
+  static assertError(tx, message, index = 0) {
     const logs = JSON.parse(tx.logs);
     assert(logs.errors, `No error in logs. Error expected with message ${message}`);
     assert.equal(logs.errors[index], message, `Error expected with message ${message}. Instead got ${logs.errors[index]}`);

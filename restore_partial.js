@@ -61,7 +61,7 @@ async function getBlock(blockNumber, tries = 1) {
       return null;
     }
     console.log(`Attempt #${tries} failed, retrying...`);
-    await new Promise(r => setTimeout(() => r(), 500));
+    await new Promise((r) => setTimeout(() => r(), 500));
     return getBlock(blockNumber, tries + 1);
   }
 }
@@ -125,7 +125,7 @@ async function fetchSnapshots(tries = 1) {
       return null;
     }
     console.log(`Attempt #${tries} failed, retrying...`);
-    await new Promise(r => setTimeout(() => r(), 500));
+    await new Promise((r) => setTimeout(() => r(), 500));
     return fetchSnapshots(tries + 1);
   }
 }
@@ -141,7 +141,7 @@ async function downloadSnapshot(url, name) {
     method: 'GET',
     url,
     responseType: 'stream',
-  }).then(response => new Promise((resolve, reject) => {
+  }).then((response) => new Promise((resolve, reject) => {
     const writer = fs.createWriteStream(`./${name}`);
     response.data.pipe(writer);
 

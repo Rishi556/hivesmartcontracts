@@ -180,8 +180,13 @@ async function payOutBeneficiaries(rewardPool, token, post, authorBenePortion) {
       rewardLog.mute = true;
     }
     api.emit('beneficiaryReward', rewardLog);
-    await payUser(symbol, benePay, beneficiary.account, rewardPool.config.stakedRewardPercentage,
-      mute);
+    await payUser(
+      symbol,
+      benePay,
+      beneficiary.account,
+      rewardPool.config.stakedRewardPercentage,
+      mute,
+    );
     totalBenePay = api.BigNumber(totalBenePay).plus(benePay);
   }
   return totalBenePay;
@@ -207,9 +212,7 @@ async function payOutCurators(rewardPool, token, post, curatorPortion, params) {
     for (let i = 0; i < votesToPayout.length; i += 1) {
       const vote = votesToPayout[i];
       if (api.BigNumber(vote.curationWeight) > 0) {
-        const totalCurationWeight = calculateCurationWeightRshares(
-          rewardPool, post.votePositiveRshareSum,
-        );
+        const totalCurationWeight = calculateCurationWeightRshares(rewardPool, post.votePositiveRshareSum);
         const votePay = api.BigNumber(curatorPortion).multipliedBy(vote.curationWeight)
           .dividedBy(totalCurationWeight)
           .toFixed(token.precision, api.BigNumber.ROUND_DOWN);
@@ -270,9 +273,7 @@ async function payOutPost(rewardPool, token, post, params) {
   response.votesProcessed += curatorPayStatus.votesProcessed;
   response.done = curatorPayStatus.done;
   if (curatorPayStatus.done) {
-    const beneficiariesPayoutValue = await payOutBeneficiaries(
-      rewardPool, token, post, authorBenePortion,
-    );
+    const beneficiariesPayoutValue = await payOutBeneficiaries(rewardPool, token, post, authorBenePortion);
     const authorPortion = api.BigNumber(authorBenePortion).minus(beneficiariesPayoutValue)
       .toFixed(token.precision, api.BigNumber.ROUND_DOWN);
 
@@ -288,8 +289,13 @@ async function payOutPost(rewardPool, token, post, params) {
       rewardLog.mute = true;
     }
     api.emit('authorReward', rewardLog);
-    await payUser(post.symbol, authorPortion, post.author,
-      rewardPool.config.stakedRewardPercentage, mute);
+    await payUser(
+      post.symbol,
+      authorPortion,
+      post.author,
+      rewardPool.config.stakedRewardPercentage,
+      mute,
+    );
     await api.db.remove('posts', post);
   }
   return response;
@@ -304,14 +310,16 @@ async function computePostRewards(params, rewardPool, token, endTimestamp) {
     maxVotesProcessedPerRound,
   } = params;
 
-  const postsToPayout = await api.db.find('posts',
+  const postsToPayout = await api.db.find(
+    'posts',
     {
       rewardPoolId: rewardPool._id,
       cashoutTime: { $gte: lastClaimDecayTimestamp, $lte: endTimestamp },
     },
     maxPostsProcessedPerRound,
     0,
-    [{ index: 'byCashoutTime', descending: false }, { index: '_id', descending: false }]);
+    [{ index: 'byCashoutTime', descending: false }, { index: '_id', descending: false }],
+  );
   let done = false;
   let deductFromRewardPool = api.BigNumber(0);
   let votesProcessed = 0;
@@ -349,32 +357,38 @@ async function computePostRewards(params, rewardPool, token, endTimestamp) {
 async function postClaimsInInterval(params, rewardPool, start, end) {
   let postOffset = 0;
   let newPendingClaims = api.BigNumber(0);
-  let postsToPayout = await api.db.find('posts',
+  let postsToPayout = await api.db.find(
+    'posts',
     {
       rewardPoolId: rewardPool._id,
       cashoutTime: { $gte: start, $lte: end },
     },
     POST_QUERY_LIMIT,
     postOffset,
-    [{ index: 'byCashoutTime', descending: false }, { index: '_id', descending: false }]);
+    [{ index: 'byCashoutTime', descending: false }, { index: '_id', descending: false }],
+  );
   while (postsToPayout && postsToPayout.length > 0) {
     newPendingClaims = newPendingClaims.plus(
-      postsToPayout.reduce((x, y) => x.plus(calculateWeightRshares(rewardPool, y.voteRshareSum)),
-        api.BigNumber(0)),
+      postsToPayout.reduce(
+        (x, y) => x.plus(calculateWeightRshares(rewardPool, y.voteRshareSum)),
+        api.BigNumber(0),
+      ),
     )
       .dp(SMT_PRECISION, api.BigNumber.ROUND_DOWN);
     if (postsToPayout.length < POST_QUERY_LIMIT) {
       break;
     }
     postOffset += POST_QUERY_LIMIT;
-    postsToPayout = await api.db.find('posts',
+    postsToPayout = await api.db.find(
+      'posts',
       {
         rewardPoolId: rewardPool._id,
         cashoutTime: { $gte: start, $lte: end },
       },
       POST_QUERY_LIMIT,
       postOffset,
-      [{ index: 'byCashoutTime', descending: false }, { index: '_id', descending: false }]);
+      [{ index: 'byCashoutTime', descending: false }, { index: '_id', descending: false }],
+    );
   }
   return newPendingClaims;
 }
@@ -420,7 +434,7 @@ async function tokenMaintenance() {
       active: true,
       $expr: rewardPoolProcessingExpression,
     }, maintenanceTokensPerBlock - rewardPools.length, 0, [{ index: '_id', descending: false }]);
-    const existingIds = new Set(rewardPools.map(p => p._id));
+    const existingIds = new Set(rewardPools.map((p) => p._id));
     moreRewardPools.forEach((mrp) => {
       if (!existingIds.has(mrp._id)) {
         rewardPools.push(mrp);
@@ -462,10 +476,13 @@ async function tokenMaintenance() {
 
         const rewardToAdd = api.BigNumber(rewardPerInterval);
         if (api.BigNumber(rewardToAdd).gt(0)) {
-          await api.executeSmartContract('tokens', 'issueToContract',
+          await api.executeSmartContract(
+            'tokens',
+            'issueToContract',
             {
               symbol: rewardPool.symbol, quantity: rewardToAdd, to: 'comments', isSignedWithActiveKey: true,
-            });
+            },
+          );
           rewardPool.rewardPool = api.BigNumber(rewardPool.rewardPool).plus(rewardToAdd)
             .toFixed(token.precision, api.BigNumber.ROUND_DOWN);
         }
@@ -483,9 +500,7 @@ async function tokenMaintenance() {
         // ensure it cannot take more of the current pool
         rewardPool.pendingClaims = api.BigNumber(rewardPool.pendingClaims)
           .plus(
-            await postClaimsInInterval(
-              params, rewardPool, lastRewardTimestamp, nextRewardTimestamp,
-            ),
+            await postClaimsInInterval(params, rewardPool, lastRewardTimestamp, nextRewardTimestamp),
           )
           .toFixed(SMT_PRECISION, api.BigNumber.ROUND_DOWN);
 
@@ -540,7 +555,6 @@ actions.createRewardPool = async (payload) => {
 
   if (!api.assert(authorizedCreation, 'you must have enough tokens to cover the creation fee')) return;
 
-
   const token = await api.db.findOneInTable('tokens', 'tokens', { symbol });
   if (!api.assert(token, 'token not found')) return;
   if (!api.assert(config && typeof config === 'object', 'config invalid')) return;
@@ -592,19 +606,18 @@ actions.createRewardPool = async (payload) => {
   if (!api.assert(votePowerConsumption && Number.isInteger(votePowerConsumption) && votePowerConsumption >= 1 && votePowerConsumption <= 10000, 'votePowerConsumption should be an integer between 1 and 10000')) return;
   if (!api.assert(downvotePowerConsumption && Number.isInteger(downvotePowerConsumption) && downvotePowerConsumption >= 1 && downvotePowerConsumption <= 10000, 'downvotePowerConsumption should be an integer between 1 and 10000')) return;
 
-  if (!api.assert(Array.isArray(tags) && tags.length >= 1 && tags.length <= maxTagsPerPool && tags.every(t => typeof t === 'string'), `tags should be a non-empty array of strings of length at most ${maxTagsPerPool}`)) return;
+  if (!api.assert(Array.isArray(tags) && tags.length >= 1 && tags.length <= maxTagsPerPool && tags.every((t) => typeof t === 'string'), `tags should be a non-empty array of strings of length at most ${maxTagsPerPool}`)) return;
 
   if (!api.assert(typeof disableDownvote === 'boolean', 'disableDownvote should be boolean')) return;
   if (!api.assert(typeof ignoreDeclinePayout === 'boolean', 'ignoreDeclinePayout should be boolean')) return;
 
   if (!assertAppTaxConfigValid(appTaxConfig)) return;
 
-  if (!api.assert(!excludeTags || (Array.isArray(excludeTags) && excludeTags.length >= 1 && excludeTags.length <= maxTagsPerPool && excludeTags.every(t => typeof t === 'string')), `excludeTags should be a non-empty array of strings of length at most ${maxTagsPerPool}`)) return;
+  if (!api.assert(!excludeTags || (Array.isArray(excludeTags) && excludeTags.length >= 1 && excludeTags.length <= maxTagsPerPool && excludeTags.every((t) => typeof t === 'string')), `excludeTags should be a non-empty array of strings of length at most ${maxTagsPerPool}`)) return;
 
   if (!api.assert(!rewardReductionIntervalSeconds || (Number.isInteger(rewardReductionIntervalSeconds) && rewardReductionIntervalSeconds >= rewardIntervalSeconds), 'rewardReductionIntervalSeconds should be an integer greater or equal to rewardIntervalSeconds')) return;
   const rewardReductionPercentageDecimal = api.BigNumber(rewardReductionPercentage);
   if (!api.assert(!rewardReductionPercentage || (typeof rewardReductionPercentage === 'string' && rewardReductionPercentageDecimal.isFinite() && rewardReductionPercentageDecimal.gte('0') && rewardReductionPercentageDecimal.lte('100') && rewardReductionPercentageDecimal.dp() <= 1), 'rewardReductionPercentage should be between "0" and "100" with precision at most 1')) return;
-
 
   // for now, restrict to 1 pool per symbol, and creator must be issuer.
   // eslint-disable-next-line no-template-curly-in-string
@@ -753,7 +766,7 @@ actions.updateRewardPool = async (payload) => {
   if (!api.assert(downvotePowerConsumption && Number.isInteger(downvotePowerConsumption) && downvotePowerConsumption >= 1 && downvotePowerConsumption <= 10000, 'downvotePowerConsumption should be an integer between 1 and 10000')) return;
   existingRewardPool.config.downvotePowerConsumption = downvotePowerConsumption;
 
-  if (!api.assert(Array.isArray(tags) && tags.length >= 1 && tags.length <= maxTagsPerPool && tags.every(t => typeof t === 'string'), `tags should be a non-empty array of strings of length at most ${maxTagsPerPool}`)) return;
+  if (!api.assert(Array.isArray(tags) && tags.length >= 1 && tags.length <= maxTagsPerPool && tags.every((t) => typeof t === 'string'), `tags should be a non-empty array of strings of length at most ${maxTagsPerPool}`)) return;
   existingRewardPool.config.tags = tags;
 
   if (!api.assert(typeof disableDownvote === 'boolean', 'disableDownvote should be boolean')) return;
@@ -764,7 +777,7 @@ actions.updateRewardPool = async (payload) => {
   if (!assertAppTaxConfigValid(appTaxConfig)) return;
   existingRewardPool.config.appTaxConfig = appTaxConfig;
 
-  if (!api.assert(!excludeTags || (Array.isArray(excludeTags) && excludeTags.length >= 1 && excludeTags.length <= maxTagsPerPool && excludeTags.every(t => typeof t === 'string')), `excludeTags should be a non-empty array of strings of length at most ${maxTagsPerPool}`)) return;
+  if (!api.assert(!excludeTags || (Array.isArray(excludeTags) && excludeTags.length >= 1 && excludeTags.length <= maxTagsPerPool && excludeTags.every((t) => typeof t === 'string')), `excludeTags should be a non-empty array of strings of length at most ${maxTagsPerPool}`)) return;
   existingRewardPool.config.excludeTags = excludeTags;
 
   if (!api.assert(!rewardReductionIntervalSeconds || (Number.isInteger(rewardReductionIntervalSeconds) && rewardReductionIntervalSeconds >= rewardIntervalSeconds), 'rewardReductionIntervalSeconds should be an integer greater or equal to rewardIntervalSeconds')) return;
@@ -889,7 +902,6 @@ actions.resetPool = async (payload) => {
   await api.db.update('rewardPools', existingRewardPool);
 };
 
-
 async function getRewardPoolIds(payload) {
   const {
     jsonMetadata,
@@ -912,25 +924,29 @@ async function getRewardPoolIds(payload) {
     // Can only return params.maxPoolsPerPost (<1000) posts
     const parentPosts = await api.db.find('posts', { authorperm: parentAuthorperm });
     if (parentPosts && parentPosts.length > 0) {
-      return parentPosts.map(p => p.rewardPoolId);
+      return parentPosts.map((p) => p.rewardPoolId);
     }
     return [];
   }
   // Check metadata for tags / parent permlink
   // for community.
   if (jsonMetadata && jsonMetadata.tags && Array.isArray(jsonMetadata.tags)
-      && jsonMetadata.tags.every(t => typeof t === 'string')) {
+      && jsonMetadata.tags.every((t) => typeof t === 'string')) {
     const searchTags = parentPermlink ? jsonMetadata.tags.concat([parentPermlink])
       : jsonMetadata.tags;
     const poolQuery = {
       'config.tags': { $in: searchTags },
       'config.excludeTags': { $not: { $in: searchTags } },
     };
-    const tagRewardPools = await api.db.find('rewardPools',
+    const tagRewardPools = await api.db.find(
+      'rewardPools',
       poolQuery,
-      params.maxPoolsPerPost, 0, [{ index: '_id', descending: false }]);
+      params.maxPoolsPerPost,
+      0,
+      [{ index: '_id', descending: false }],
+    );
     if (tagRewardPools && tagRewardPools.length > 0) {
-      return tagRewardPools.map(r => r._id);
+      return tagRewardPools.map((r) => r._id);
     }
   }
   return [];
@@ -1086,9 +1102,7 @@ async function processVote(post, voter, weight, timestamp) {
         / rewardPool.config.votePowerConsumption);
     usedPower = Math.floor((usedPower + usedPowerDenom - 1) / usedPowerDenom);
     votingPower.votingPower = Math.max(0, Math.floor(votingPower.votingPower - usedPower));
-    curationWeight = api.BigNumber(calculateCurationWeightRshares(
-      rewardPool, api.BigNumber(voteRshares).plus(post.votePositiveRshareSum),
-    ))
+    curationWeight = api.BigNumber(calculateCurationWeightRshares(rewardPool, api.BigNumber(voteRshares).plus(post.votePositiveRshareSum)))
       .minus(calculateCurationWeightRshares(rewardPool, post.votePositiveRshareSum))
       .toFixed(SMT_PRECISION, api.BigNumber.ROUND_DOWN);
   } else if (weight < 0 && !rewardPool.config.disableDownvote) {
@@ -1103,9 +1117,7 @@ async function processVote(post, voter, weight, timestamp) {
         / rewardPool.config.downvotePowerConsumption);
     usedDownvotePower = Math.floor((usedDownvotePower + usedDownvotePowerDenom - 1)
         / usedDownvotePowerDenom);
-    votingPower.downvotingPower = Math.max(
-      0, Math.floor(votingPower.downvotingPower - usedDownvotePower),
-    );
+    votingPower.downvotingPower = Math.max(0, Math.floor(votingPower.downvotingPower - usedDownvotePower));
   }
 
   if (votingPower.mute) {
@@ -1184,8 +1196,10 @@ actions.vote = async (payload) => {
   if (!api.assert(api.sender === 'null', 'can only vote with voting op')) return;
   await tokenMaintenance();
 
-  if (!api.assert(Number.isInteger(weight) && weight >= -10000 && weight <= 10000,
-    'weight must be an integer from -10000 to 10000')) return;
+  if (!api.assert(
+    Number.isInteger(weight) && weight >= -10000 && weight <= 10000,
+    'weight must be an integer from -10000 to 10000',
+  )) return;
 
   const blockDate = new Date(`${api.hiveBlockTimestamp}.000Z`);
   const timestamp = blockDate.getTime();

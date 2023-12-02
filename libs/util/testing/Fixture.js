@@ -79,9 +79,9 @@ class Fixture {
     const plugin = {};
     plugin.name = newPlugin.PLUGIN_NAME;
     plugin.cp = fork(newPlugin.PLUGIN_PATH, [], { silent: true });
-    plugin.cp.on('message', msg => this.route(msg));
-    plugin.cp.stdout.on('data', data => console.log(`[${newPlugin.PLUGIN_NAME}]`, data.toString()));
-    plugin.cp.stderr.on('data', data => console.error(`[${newPlugin.PLUGIN_NAME}]`, data.toString()));
+    plugin.cp.on('message', (msg) => this.route(msg));
+    plugin.cp.stdout.on('data', (data) => console.log(`[${newPlugin.PLUGIN_NAME}]`, data.toString()));
+    plugin.cp.stderr.on('data', (data) => console.error(`[${newPlugin.PLUGIN_NAME}]`, data.toString()));
 
     this.plugins[newPlugin.PLUGIN_NAME] = plugin;
 

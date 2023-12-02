@@ -38,8 +38,8 @@ const getClosestAmount = (baseCurrency, price, precision) => {
   return amount.toFixed(precision);
 };
 
-const countBalanceInBuyOrders = orders => orders.reduce((t, v) => t.plus(api.BigNumber(v.tokensLocked)), api.BigNumber(0));
-const countBalanceInSellOrders = orders => orders.reduce((t, v) => t.plus(api.BigNumber(v.quantity)), api.BigNumber(0));
+const countBalanceInBuyOrders = (orders) => orders.reduce((t, v) => t.plus(api.BigNumber(v.tokensLocked)), api.BigNumber(0));
+const countBalanceInSellOrders = (orders) => orders.reduce((t, v) => t.plus(api.BigNumber(v.quantity)), api.BigNumber(0));
 
 const getOrderData = (orders, myOrders, account, qtyLimit, strategy, wallQty) => {
   const data = {};
@@ -157,8 +157,8 @@ const tickMarket = async (market, txIdPrefix) => {
   // get orders
   const buyOrders = await getOrderBook('buyBook', market.symbol, true);
   const sellOrders = await getOrderBook('sellBook', market.symbol, false);
-  const myBuyOrders = buyOrders.filter(o => o.account === market.account);
-  const mySellOrders = sellOrders.filter(o => o.account === market.account);
+  const myBuyOrders = buyOrders.filter((o) => o.account === market.account);
+  const mySellOrders = sellOrders.filter((o) => o.account === market.account);
 
   // if empty market, nothing for us to do
   const isBuyBookEmpty = buyOrders.length === 0 || buyOrders.length === myBuyOrders.length;
